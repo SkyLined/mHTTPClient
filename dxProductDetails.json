@@ -1,0 +1,36 @@
+{
+  "a0sDebugAdditionalProductNames": [
+    "mFileSystemItem",
+    "mDebugOutput",
+    "mSSL",
+    "mWindowsSDK",
+    "mConsole"
+  ],
+  "a0sDependentOnProductNames": [
+    "mHTTPConnection",
+    "mHTTPProtocol",
+    "mMultiThreading",
+    "mNotProvided",
+    "mTCPIPConnection",
+    "mWindowsSDK"
+  ],
+  "a0sReleaseAdditionalProductNames": [
+    "mSSL"
+  ],
+  "asProductTypes": [
+    "Python module"
+  ],
+  "o0Repository": {
+    "sStructureVersion": "2021-07-02 11:16",
+    "sType": "GitHub",
+    "sbBranch": "master",
+    "sbRepositoryName": "mHTTPClient",
+    "sbUserName": "SkyLined"
+  },
+  "oProductVersion": "2021-07-15 14:00",
+  "s0PythonModuleName": "mHTTPClient",
+  "sProductAuthor": "SkyLined",
+  "sProductName": "mHTTPClient",
+  "sStructureVersion": "2021-07-02 11:16",
+  "sb0ProductURL": "https://github.com/SkyLined/mHTTPClient"
+}
