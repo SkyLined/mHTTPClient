@@ -22,3 +22,6 @@
 [submodule "modules\\mHTTPProtocol"]
 	path = modules\\mHTTPProtocol
 	url = https://github.com/SkyLined/mHTTPProtocol
+[submodule "modules\\mMultiThreading"]
+	path = modules\\mMultiThreading
+	url = https://github.com/SkyLined/mMultiThreading
