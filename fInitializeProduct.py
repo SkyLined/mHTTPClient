@@ -2,7 +2,7 @@ def fInitializeProduct():
   import json, os, sys;
   
   import __main__;
-  bIsMainProduct = os.path.dirname(__main__.__file__) == os.path.dirname(__file__);
+  bIsMainProduct = hasattr(__main__, "__file__") and os.path.dirname(__main__.__file__) == os.path.dirname(__file__);
   
   bDebugOutput = "--debug-product-initialization" in sys.argv[1:];
   auCurrentLineLength = [0];
@@ -30,6 +30,14 @@ def fInitializeProduct():
               ("Optional module" if bOptional else "Module", sModuleName, oException.__class__.__name__, repr(oException.args)[1:-1]));
       if bOptional:
         return None;
+      if bIsMainProduct:
+        print("*" * 80);
+        if bModuleNotFound:
+          print("%s depends on %s which is not available." % (sProductName, sModuleName));
+        else:
+          print("%s depends on %s which cannot be loaded because of an error:" % (sProductName, sModuleName));
+          print("%s: %s" % (oException.__class__.__name__, oException));
+        print("*" * 80);
       raise;
     if bDebugOutput: fDebugOutput("+ Module %s loaded (%s)." % (sModuleName, os.path.dirname(oModule.__file__)));
     return oModule;
@@ -59,28 +67,18 @@ def fInitializeProduct():
   except Exception as oException:
     if bDebugOutput: fDebugOutput("- Product details cannot be loaded from %s: %s(%s)" % \
           (sProductDetailsFilePath, oException.__class__.__name__, repr(oException.args)[1:-1]));
+    raise;
   if bDebugOutput: fDebugOutput("+ Product details for %s loaded (%s)" % (
     "%(sProductName)s by %(sProductAuthor)s" % dxProductDetails, 
     sProductDetailsFilePath,
   ));
-  try:
-    for sModuleName in dxProductDetails.get("a0sDependentOnProductNames", []):
-      fo0LoadModule(dxProductDetails["sProductName"], sModuleName, bOptional = False);
-    for sModuleName in (
-      dxProductDetails.get("a0sDebugAdditionalProductNames", []) +
-      dxProductDetails.get("a0sReleaseAdditionalProductNames", [])
-    ):
-      fo0LoadModule(dxProductDetails["sProductName"], sModuleName, bOptional = True);
-  except Exception as oException:
-    if bIsMainProduct:
-      print("*" * 80);
-      if bModuleNotFound:
-        print("%s depends on %s which is not available." % (sProductName, sModuleName));
-      else:
-        print("%s depends on %s which cannot be loaded because of an error:" % (sProductName, sModuleName));
-        print("%s: %s" % (oException.__class__.__name__, oException));
-      print("*" * 80);
-    raise;
+  for sModuleName in dxProductDetails.get("a0sDependentOnProductNames", []):
+    fo0LoadModule(dxProductDetails["sProductName"], sModuleName, bOptional = False);
+  for sModuleName in (
+    dxProductDetails.get("a0sDebugAdditionalProductNames", []) +
+    dxProductDetails.get("a0sReleaseAdditionalProductNames", [])
+  ):
+    fo0LoadModule(dxProductDetails["sProductName"], sModuleName, bOptional = True);
   if bDebugOutput: fDebugOutput("+ Product %s initialized." % dxProductDetails["sProductName"]);
   # Restore the original module search path
   sys.path = asOriginalSysPath;

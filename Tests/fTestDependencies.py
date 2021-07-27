@@ -1,3 +1,5 @@
+import sys;
+
 gbDebugOutput = False;
 
 def fTestDependencies():
@@ -63,7 +65,7 @@ def fTestDependencies():
     for asPaths, asNamesToLoad in atasPathsAndNamesToload:
       sys.path = asPaths;
       for sNameToLoad in asNamesToLoad:
-          __import__(sNameToLoad, globals(), locals(), [], 0);
+        __import__(sNameToLoad, globals(), locals(), [], 0);
     
     # Determine which Python internal modules were unexpectedly loaded as dependencies:
     asLoadedPythonInteralModuleBaseNames = [
@@ -177,6 +179,7 @@ def fTestDependencies():
           sModuleName,
           " (%s)" % (dsLoadedDependencyModules_by_sName[sModuleName].__file__,) if sModuleName in dsLoadedDependencyModules_by_sName else "",
         ));
+      sys.exit(1);
     
     if gbDebugOutput:
       if asUnexpectedDependencyPythonInteralModuleBaseNames or asSuperflousDependencyPythonInternalModuleBaseNames \

@@ -1,7 +1,8 @@
 @ECHO OFF
 SETLOCAL
-IF EXIST "%~dpn0\%~n0\%~nx0" (
-  CALL "%~dpn0\%~n0\%~nx0" %*
+IF EXIST "%~dpn0\%~nx0" (
+  CALL "%~dpn0\%~nx0" %*
+  IF ERRORLEVEL 1 GOTO :ERROR
 )
 SET TEST_ALL=FALSE
 SET TEST_PYTHON=MAYBE
@@ -13,32 +14,49 @@ IF NOT "%TEST_PYTHON%" == "FALSE" (
   IF NOT EXIST "%~dp0\%~n0\%~n0.py" (
     IF NOT "%TEST_PYTHON%" == "MAYBE" (
       ECHO - There is no file "%~dp0\%~n0\%~n0.py" for testing!
+      ENDLOCAL
+      EXIT /B 1
     )
   ) ELSE (
     CALL :TEST_PYTHON %*
-    IF ERRORLEVEL 1 GOTO :ERROR
+    IF ERRORLEVEL 1 (
+      ENDLOCAL
+      EXIT /B 1
+    )
   )
 )
 IF NOT "%TEST_PHP%" == "FALSE" (
   IF NOT EXIST "%~dp0\%~n0\%~n0.php" (
     IF NOT "%TEST_PHP%" == "MAYBE" (
       ECHO - There is no file "%~dp0\%~n0\%~n0.php" for testing!
+      ENDLOCAL
+      EXIT /B 1
     )
   ) ELSE (
     CALL :TEST_PHP %*
-    IF ERRORLEVEL 1 GOTO :ERROR
+    IF ERRORLEVEL 1 (
+      ENDLOCAL
+      EXIT /B 1
+    )
   )
 )
 IF NOT "%TEST_JAVASCRIPT%" == "FALSE" (
   IF NOT EXIST "%~dp0\%~n0\%~n0.js" (
     IF NOT "%TEST_JAVASCRIPT%" == "MAYBE" (
       ECHO - There is no file "%~dp0\%~n0\%~n0.js" for testing!
+      ENDLOCAL
+      EXIT /B 1
     )
   ) ELSE (
     CALL :TEST_JAVASCRIPT %*
-    IF ERRORLEVEL 1 GOTO :ERROR
+    IF ERRORLEVEL 1 (
+      ENDLOCAL
+      EXIT /B 1
+    )
   )
 )
+ENDLOCAL
+EXIT /B 0
 
 :PARSE_ARGUMENTS
   IF "%~1" == "--all" (
@@ -109,29 +127,20 @@ IF NOT "%TEST_JAVASCRIPT%" == "FALSE" (
 
 :RUN_PYTHON
   CALL %PYTHON% "%~dpn0\%~n0.py" %*
-  IF ERRORLEVEL 1 (
-    ECHO   - Failed with error %ERRORLEVEL%!
-    ENDLOCAL
-    EXIT /B %ERRORLEVEL%
-  )
-  ECHO + Done.
-  ENDLOCAL
+  IF ERRORLEVEL 1 GOTO :ERROR
+  ECHO + Completed tests using %PYTHON%.
   EXIT /B 0
 
 :RUN_PYTHON_FOR_BOTH_ISAS
   ECHO + Testing using Python for x86 ISA...
   CALL %PYTHON_X86% "%~dpn0\%~n0.py" %*
-  IF NOT ERRORLEVEL 1 (
-    ECHO + Testing using Python for x64 ISA...
-    CALL %PYTHON_X64% "%~dpn0\%~n0.py" %*
-  )
-  IF ERRORLEVEL 1 (
-    ECHO   - Failed with error %ERRORLEVEL%!
-    ENDLOCAL
-    EXIT /B %ERRORLEVEL%
-  )
-  ECHO + Done.
-  ENDLOCAL
+  IF ERRORLEVEL 1 GOTO :ERROR
+  ECHO + Completed tests using %PYTHON_X86%.
+  ECHO.
+  ECHO + Testing using Python for x64 ISA...
+  CALL %PYTHON_X64% "%~dpn0\%~n0.py" %*
+  IF ERRORLEVEL 1 GOTO :ERROR
+  ECHO + Completed tests using %PYTHON_X64%.
   EXIT /B 0
 
 :TEST_PHP
@@ -143,14 +152,15 @@ IF NOT "%TEST_JAVASCRIPT%" == "FALSE" (
       GOTO :FOUND_PHP
     )
     ECHO - Cannot find php.exe. Please add PHP to the "PATH" environment variable.
-    ENDLOCAL
     IF "%TEST_PHP%" == "MAYBE" EXIT /B 0
     EXIT /B 1
   )
 :FOUND_PHP
   ECHO * Testing PHP...
   CALL %PHP% "%~dp0\%~n0\%~n0.php" %*
-  ENDLOCAL & EXIT /B %ERRORLEVEL%
+  IF ERRORLEVEL 1 GOTO :ERROR
+  ECHO + Completed tests using %PHP%.
+  EXIT /B 0
 
 :TEST_NODE
   REM CURRENTLY NOT IMPLEMENTED - You can load the Tests.html file in a browser
@@ -164,14 +174,15 @@ IF NOT "%TEST_JAVASCRIPT%" == "FALSE" (
       GOTO :FOUND_NODE
     )
     ECHO - Cannot find node.exe. Please add Node to the "PATH" environment variable.
-    ENDLOCAL
     IF "%TEST_PHP%" == "MAYBE" EXIT /B 0
     EXIT /B 1
   )
 :FOUND_NODE
   ECHO * Testing NODE...
   CALL %NODE% "%~dp0\Tests\Tests.js" %*
-  ENDLOCAL & EXIT /B %ERRORLEVEL%
+  IF ERRORLEVEL 1 GOTO :ERROR
+  ECHO + Completed tests using %NODE%.
+  EXIT /B 0
 
 :ERROR
   ECHO - Error %ERRORLEVEL%!
