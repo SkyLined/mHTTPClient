@@ -16,3 +16,6 @@
 [submodule "modules/mNotProvided"]
 	path = modules/mNotProvided
 	url = https://github.com/SkyLined/mNotProvided/
+[submodule "modules\\mHTTPConnection"]
+	path = modules\\mHTTPConnection
+	url = https://github.com/SkyLined/mHTTPConnection
