@@ -31,3 +31,6 @@
 [submodule "modules\\mTCPIPConnection"]
 	path = modules\\mTCPIPConnection
 	url = https://github.com/SkyLined/mTCPIPConnection
+[submodule "modules\\mWindowsSDK"]
+	path = modules\\mWindowsSDK
+	url = https://github.com/SkyLined/mWindowsSDK
