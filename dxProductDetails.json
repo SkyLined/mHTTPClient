@@ -23,11 +23,11 @@
   "o0Repository": {
     "sStructureVersion": "2021-07-02 11:16",
     "sType": "GitHub",
-    "sbBranch": "master",
+    "sbBranch": "main",
     "sbRepositoryName": "mHTTPClient",
     "sbUserName": "SkyLined"
   },
-  "oProductVersion": "2021-07-27 14:05",
+  "oProductVersion": "2021-07-30 12:09",
   "s0PythonModuleName": "mHTTPClient",
   "sProductAuthor": "SkyLined",
   "sProductName": "mHTTPClient",
