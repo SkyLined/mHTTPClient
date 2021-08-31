@@ -139,7 +139,7 @@ class iHTTPClient(cWithCallbacks):
       bAutomaticallyAddContentLengthHeader = bAutomaticallyAddContentLengthHeader
     );
     if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Host"):
-      oRequest.oHeaders.foAddHeaderForNameAndValue(b"Host", oURL.sbHostnameAndPort);
+      oRequest.oHeaders.foAddHeaderForNameAndValue(b"Host", oURL.sbHostnameAndOptionalPort);
     if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Accept-Encoding"):
       oRequest.oHeaders.foAddHeaderForNameAndValue(b"Accept-Encoding", b", ".join(oRequest.asbSupportedCompressionTypes));
     return oRequest;
