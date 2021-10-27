@@ -9,9 +9,9 @@ from mHTTPConnection import cHTTPConnection, cHTTPConnectionsToServerPool, cURL;
 from mMultiThreading import cLock, cWithCallbacks;
 from mNotProvided import *;
 try: # SSL support is optional.
-  from mSSL import cCertificateStore as czCertificateStore;
+  import mSSL as m0SSL;
 except:
-  czCertificateStore = None; # No SSL support
+  m0SSL = None; # No SSL support
 
 
 # To turn access to data store in multiple variables into a single transaction, we will create locks.
@@ -20,6 +20,7 @@ except:
 gnDeadlockTimeoutInSeconds = 1; # We're not doing anything time consuming, so this should suffice.
 
 class iHTTPClient(cWithCallbacks):
+  bSSLIsSupported = m0SSL is not None;
   u0DefaultMaxNumberOfConnectionsToServer = 10;
   n0zDefaultConnectTimeoutInSeconds = 10;
   n0zDefaultSecureTimeoutInSeconds = 5;
