@@ -99,6 +99,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       "proxy selected",
       "new direct client", "new client using proxy server",
       "connect failed", "new connection",
+      "bytes written", "bytes read",
       "request sent", "response received", "request sent and response received",
       "secure connection established",
       "connection terminated",
@@ -334,6 +335,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     if bNewClient:
       oHTTPClient.fAddCallback("connect failed", oSelf.__fHandleConnectFailedCallbackFromHTTPClient);
       oHTTPClient.fAddCallback("new connection", oSelf.__fHandleNewConnectionCallbackFromHTTPClient);
+      oHTTPClient.fAddCallback("bytes written", oSelf.__fHandleBytesWrittenCallbackFromHTTPClient);
+      oHTTPClient.fAddCallback("bytes read", oSelf.__fHandleBytesReadCallbackFromHTTPClient);
       oHTTPClient.fAddCallback("request sent", oSelf.__fHandleRequestSentCallbackFromHTTPClient);
       oHTTPClient.fAddCallback("response received", oSelf.__fHandleResponseReceivedCallbackFromHTTPClient);
       oHTTPClient.fAddCallback("request sent and response received", oSelf.__fHandleRequestSentAndResponseReceivedCallbackFromHTTPClient);
@@ -344,6 +347,12 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.fFireCallbacks("connect failed", oHTTPClient, sHostname, uPortNumber, oException);
   def __fHandleNewConnectionCallbackFromHTTPClient(oSelf, oHTTPClient, oConnection):
     oSelf.fFireCallbacks("new connection", oHTTPClient, oConnection);
+  def __fHandleBytesWrittenCallbackFromHTTPClient(oSelf, oHTTPClient, oConnection, sbBytesWritten):
+    o0ProxyURL = None if oHTTPClient is oSelf.__oDirectHTTPClient else oHTTPClient.oProxyServerURL;
+    oSelf.fFireCallbacks("bytes written", oHTTPClient, o0ProxyURL, oConnection, sbBytesWritten);
+  def __fHandleBytesReadCallbackFromHTTPClient(oSelf, oHTTPClient, oConnection, sbBytesRead):
+    o0ProxyURL = None if oHTTPClient is oSelf.__oDirectHTTPClient else oHTTPClient.oProxyServerURL;
+    oSelf.fFireCallbacks("bytes read", oHTTPClient, o0ProxyURL, oConnection, sbBytesRead);
   def __fHandleRequestSentCallbackFromHTTPClient(oSelf, oHTTPClient, oConnection, oRequest):
     o0ProxyURL = None if oHTTPClient is oSelf.__oDirectHTTPClient else oHTTPClient.oProxyServerURL;
     oSelf.fFireCallbacks("request sent", oHTTPClient, o0ProxyURL, oConnection, oRequest);

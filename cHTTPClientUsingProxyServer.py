@@ -517,3 +517,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       "%d externalized connections to server through proxy" % len(oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort),
       "stopping" if oSelf.__bStopping else None,
     ] if s];
+
+for cException in acExceptions:
+  setattr(cHTTPClientUsingProxyServer, cException.__name__, cException);
+

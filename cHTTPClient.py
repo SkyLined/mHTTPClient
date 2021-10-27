@@ -63,6 +63,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.fAddEvents(
       "hostname resolved",
       "connect failed", "new connection",
+      "bytes written", "bytes read",
       "request sent", "response received", "request sent and response received",
       "connection terminated",
       "terminated",
@@ -220,6 +221,8 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       oConnectionsToServerPool.fAddCallback("hostname resolved", oSelf.__fHandleHostnameResolvedCallbackFromConnectionsToServerPool);
       oConnectionsToServerPool.fAddCallback("new connection", oSelf.__fHandleNewConnectionCallbackFromConnectionsToServerPool);
       oConnectionsToServerPool.fAddCallback("connect failed", oSelf.__fHandleConnectFailedCallbackFromConnectionsToServerPool);
+      oConnectionsToServerPool.fAddCallback("bytes read", oSelf.__fHandleBytesReadCallbackFromConnectionsToServerPool);
+      oConnectionsToServerPool.fAddCallback("bytes written", oSelf.__fHandleBytesWrittenCallbackFromConnectionsToServerPool);
       oConnectionsToServerPool.fAddCallback("request sent", oSelf.__fHandleRequestSentCallbackFromConnectionsToServerPool);
       oConnectionsToServerPool.fAddCallback("response received", oSelf.__fHandleResponseReceivedCallbackFromConnectionsToServerPool);
       oConnectionsToServerPool.fAddCallback("request sent and response received", oSelf.__fHandleRequestSentAndResponseReceivedCallbackFromConnectionsToServerPool);
@@ -238,6 +241,12 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   
   def __fHandleNewConnectionCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection):
     oSelf.fFireCallbacks("new connection", oConnection);
+  
+  def __fHandleBytesReadCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, sbBytesRead):
+    oSelf.fFireCallbacks("bytes read", oConnection, sbBytesRead);
+  
+  def __fHandleBytesWrittenCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, sbBytesWritten):
+    oSelf.fFireCallbacks("bytes written", oConnection, sbBytesWritten);
   
   def __fHandleRequestSentCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, oRequest):
     oSelf.fFireCallbacks("request sent", oConnection, oRequest);
