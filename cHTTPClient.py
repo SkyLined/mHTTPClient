@@ -20,11 +20,15 @@ from .iHTTPClient import iHTTPClient;
 # bug, where "too long" is defined by the following value:
 gnDeadlockTimeoutInSeconds = 1; # We're not doing anything time consuming, so this should suffice.
 
+from .mExceptions import *;
+
 class cHTTPClient(iHTTPClient, cWithCallbacks):
   u0zDefaultMaxNumberOfConnectionsToServer = 10;
   n0zDefaultConnectTimeoutInSeconds = 10;
   n0zDefaultSecureTimeoutInSeconds = 5;
   n0zDefaultTransactionTimeoutInSeconds = 10;
+  
+  cHTTPFailedToConnectToProxyException = cHTTPFailedToConnectToProxyException;
   
   @ShowDebugOutput
   def __init__(oSelf,
@@ -294,3 +298,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       "connected to %d servers" % len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort),
       "stopping" if oSelf.__bStopping else None,
     ] if s];
+
+for cException in acExceptions:
+  setattr(cHTTPClient, cException.__name__, cException);
+
