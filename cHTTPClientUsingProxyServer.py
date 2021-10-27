@@ -101,6 +101,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     
     oSelf.fAddEvents(
       "connect failed", "new connection", # connect failed currently does not fire: assertions are triggered instead.
+      "bytes written", "bytes read",
       "request sent", "response received", "request sent and response received",
       "secure connection established",
       "connection terminated",
@@ -380,6 +381,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     );
     assert oConnection, \
         "Expected connection but got %s" % oConnection;
+    oConnection.fAddCallback("bytes written", oSelf.__fHandleBytesWrittenCallbackFromConnection);
+    oConnection.fAddCallback("bytes read", oSelf.__fHandleBytesReadCallbackFromConnection);
     oConnection.fAddCallback("request sent", oSelf.__fHandleRequestSentCallbackFromConnection);
     oConnection.fAddCallback("response received", oSelf.__fHandleResponseReceivedCallbackFromConnection);
     oConnection.fAddCallback("terminated", oSelf.__fHandleTerminatedCallbackFromConnection);
@@ -388,6 +391,50 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.append(oConnection);
     oSelf.fFireCallbacks("new connection", oConnection);
     return oConnection;
+  
+  def __fHandleBytesWrittenCallbackFromConnection(oSelf, oConnection, sbBytesWritten):
+    oSelf.fFireCallbacks("bytes written", oConnection, sbBytesWritten);
+  
+  def __fHandleBytesReadCallbackFromConnection(oSelf, oConnection, sbBytesRead):
+    oSelf.fFireCallbacks("bytes read", oConnection, sbBytesRead);
+  
+  def __fHandleRequestSentCallbackFromConnection(oSelf, oConnection, oRequest):
+    oSelf.fFireCallbacks("request sent", oConnection, oRequest);
+  
+  def __fHandleResponseReceivedCallbackFromConnection(oSelf, oConnection, oReponse):
+    oSelf.fFireCallbacks("response received", oConnection, oReponse);
+  
+  def __fHandleTerminatedCallbackFromConnection(oSelf, oConnection):
+    oSelf.fFireCallbacks("connection terminated", oConnection);
+    oSelf.__oPropertyAccessTransactionLock.fAcquire();
+    try:
+      if oConnection in oSelf.__aoConnectionsToProxyNotConnectedToAServer:
+        oSelf.__aoConnectionsToProxyNotConnectedToAServer.remove(oConnection);
+      else:
+        for sbProtocolHostPort in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort:
+          if oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort] == oConnection:
+            del oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort];
+            break;
+          if oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort] == oConnection:
+            del oSelf.__doExterminalizedConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort];
+            break;
+        else:
+          raise AssertionError("A connection was terminated that we did not know exists (%s)" % repr(oConnection));
+      # Return if we are not stopping or if there are other connections open:
+      if not oSelf.__bStopping:
+        return;
+      if oSelf.__aoConnectionsToProxyNotConnectedToAServer:
+        return;
+      if oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort:
+        return;
+      if oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort:
+        return;
+    finally:
+      oSelf.__oPropertyAccessTransactionLock.fRelease();
+    # We are stopping and the last connection just terminated: we are terminated.
+    fShowDebugOutput("Terminated.");
+    oSelf.__oTerminatedLock.fRelease();
+    oSelf.fFireCallbacks("terminated");
   
   @ShowDebugOutput
   def __fo0GetUnusedConnectionToServerThroughProxyAndStartTransaction(oSelf, oServerBaseURL, bSecure, bExternalize):
@@ -467,44 +514,6 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     assert oConnectionToServerThroughProxy.fRestartTransaction(oSelf.__n0TransactionTimeoutInSeconds), \
         "Cannot start a connection on a newly created connection?";
     return oConnectionToServerThroughProxy;
-  
-  def __fHandleRequestSentCallbackFromConnection(oSelf, oConnection, oRequest):
-    oSelf.fFireCallbacks("request sent", oConnection, oRequest);
-  
-  def __fHandleResponseReceivedCallbackFromConnection(oSelf, oConnection, oReponse):
-    oSelf.fFireCallbacks("response received", oConnection, oReponse);
-  
-  def __fHandleTerminatedCallbackFromConnection(oSelf, oConnection):
-    oSelf.fFireCallbacks("connection terminated", oConnection);
-    oSelf.__oPropertyAccessTransactionLock.fAcquire();
-    try:
-      if oConnection in oSelf.__aoConnectionsToProxyNotConnectedToAServer:
-        oSelf.__aoConnectionsToProxyNotConnectedToAServer.remove(oConnection);
-      else:
-        for sbProtocolHostPort in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort:
-          if oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort] == oConnection:
-            del oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort];
-            break;
-          if oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort] == oConnection:
-            del oSelf.__doExterminalizedConnectionToServerThroughProxy_by_sbProtocolHostPort[sbProtocolHostPort];
-            break;
-        else:
-          raise AssertionError("A connection was terminated that we did not know exists (%s)" % repr(oConnection));
-      # Return if we are not stopping or if there are other connections open:
-      if not oSelf.__bStopping:
-        return;
-      if oSelf.__aoConnectionsToProxyNotConnectedToAServer:
-        return;
-      if oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort:
-        return;
-      if oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort:
-        return;
-    finally:
-      oSelf.__oPropertyAccessTransactionLock.fRelease();
-    # We are stopping and the last connection just terminated: we are terminated.
-    fShowDebugOutput("Terminated.");
-    oSelf.__oTerminatedLock.fRelease();
-    oSelf.fFireCallbacks("terminated");
   
   def fasGetDetails(oSelf):
     # This is done without a property lock, so race-conditions exist and it
