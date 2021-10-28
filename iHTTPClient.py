@@ -26,6 +26,13 @@ class iHTTPClient(cWithCallbacks):
   n0zDefaultSecureTimeoutInSeconds = 5;
   n0zDefaultTransactionTimeoutInSeconds = 10;
   
+  @staticmethod
+  def foURLFromString(sURL):
+    return cURL.foFromBytesString(bytes(sURL, "ascii", "strict"));
+  @staticmethod
+  def foURLFromBytesString(sbURL):
+    return cURL.foFromBytesString(sbURL);
+  
   @property
   def bStopping(oSelf):
     raise NotImplementedError();
