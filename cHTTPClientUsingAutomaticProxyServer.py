@@ -1,6 +1,5 @@
 import re;
 
-#from mWindowsSDK import *;
 from mWindowsSDK.mWinHTTP import *;
 
 try: # mDebugOutput use is Optional
@@ -57,9 +56,10 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       NULL, # DWORD dwFlags
     );
     if oSelf.__hInternet == NULL:
-      oKernel32 = foLoadKernel32DLL();
-      odwLastError = oKernel32.GetLastError();
-      raise AssertionError("Cannot initialize WinHTTP: error 0x%X" % (odwLastError.value,));
+      from mWindowsSDK.mKernel32 import oKernel32DLL;
+      from mWindowsSDK import fsGetWin32ErrorCodeDescription;
+      uLastError = oKernel32DLL.GetLastError().fuGetValue();
+      raise AssertionError("Cannot initialize WinHTTP: error 0x%08X (%s)." % (uLastError, fsGetWin32ErrorCodeDescription(uLastError)));
     # This code will instantiate other classes to make requests. A single certificate store instance is used by all
     # these instances.
     oSelf.__o0CertificateStore = (
@@ -195,16 +195,18 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       True, # BOOL    fAutoLogonIfChallenged;
     );
     oWinHTTPProxyInfo = WINHTTP_PROXY_INFO();
+    sURL = str(oURL);
     bSuccess = oWinHTTPDLL.WinHttpGetProxyForUrl(
       oSelf.__hInternet, # HINTERNET hSession
-      LPCWSTR(str(oURL)), # LPCWSTRlpcwszUrl
+      LPCWSTR(sURL), # LPCWSTRlpcwszUrl
       oWinHTTPAutoProxyOptions.foCreatePointer(), # WINHTTP_AUTOPROXY_OPTIONS *pAutoProxyOptions,
       oWinHTTPProxyInfo.foCreatePointer(), # WINHTTP_PROXY_INFO *pProxyInfo
     );
     if not bSuccess:
-      oKernel32 = foLoadKernel32DLL();
-      odwLastError = oKernel32.GetLastError();
-      raise AssertionError("Cannot call WinHttpGetProxyForUrl for URL %s: error 0x%X" % (oURL, odwLastError.value));
+      from mWindowsSDK.mKernel32 import oKernel32DLL;
+      from mWindowsSDK import fsGetWin32ErrorCodeDescription;
+      uLastError = oKernel32DLL.GetLastError().fuGetValue();
+      raise AssertionError("Cannot call WinHttpGetProxyForUrl for URL %s: error 0x%08X (%s)." % (sURL, uLastError, fsGetWin32ErrorCodeDescription(uLastError)));
      
     if oWinHTTPProxyInfo.dwAccessType == WINHTTP_ACCESS_TYPE_NO_PROXY:
       return None;
