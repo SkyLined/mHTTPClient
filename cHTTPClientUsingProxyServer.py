@@ -255,8 +255,11 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     try:
       # Try to find the non-secure connection that is available:
       for oConnection in oSelf.__aoConnectionsToProxyNotConnectedToAServer:
-        if oConnection.fbStartTransaction(oSelf.__n0TransactionTimeoutInSeconds):
-          # This connection can be reused.
+        try: # Try to start a transaction; this will only succeed on an idle connection.
+          oConnection.fStartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
+        except cTransactionalConnectionCannotBeUsedConcurrently:
+          pass; # The connection is already in use
+        else:
           fShowDebugOutput("Reusing existing connection to proxy: %s" % repr(oConnection));
           return oConnection;
       return None;
@@ -269,12 +272,17 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     try:
       # Try to find the secure connection that is idle:
       for oIdleSecureConnection in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.values():
-        if oIdleSecureConnection.fbStartTransaction(0):
-          break;
+        try: # Try to start a transaction; this will only succeed on an idle connection.
+          oIdleSecureConnection.fStartTransaction(0);
+        except cTransactionalConnectionCannotBeUsedConcurrently:
+          pass; # The connection is not idle
+        else:
+          break; # We found an idle connection and have taken ownership by starting a transaction.
       else:
         return False;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
+    # Disconnect the idle connection.
     oIdleSecureConnection.fDisconnect();
     return True;
   
@@ -386,8 +394,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oConnection.fAddCallback("request sent", oSelf.__fHandleRequestSentCallbackFromConnection);
     oConnection.fAddCallback("response received", oSelf.__fHandleResponseReceivedCallbackFromConnection);
     oConnection.fAddCallback("terminated", oSelf.__fHandleTerminatedCallbackFromConnection);
-    assert oConnection.fbStartTransaction(oSelf.__n0TransactionTimeoutInSeconds), \
-        "Cannot start a transaction on a new connection (%s)" % repr(oConnection);
+    oConnection.fStartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.append(oConnection);
     oSelf.fFireCallbacks("new connection", oConnection);
     return oConnection;
@@ -444,8 +451,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     if bSecure:
       o0SecureConnection = oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.get(oServerBaseURL.sbBase);
       if o0SecureConnection:
-        assert o0SecureConnection.fbStartTransaction(oSelf.__n0TransactionTimeoutInSeconds), \
-            "Cannot start a transaction on an existing secure connection to the server (%s)" % repr(o0SecureConnection);
+        o0SecureConnection.fStartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
         fShowDebugOutput("Reusing existing connection");
         return o0SecureConnection;
     o0ConnectionToProxy = oSelf.__fo0GetUnusedConnectionToProxyAndStartTransaction();
