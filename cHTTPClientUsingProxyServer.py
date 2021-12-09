@@ -100,11 +100,17 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     );
     
     oSelf.fAddEvents(
-      "connect failed", "new connection", # connect failed currently does not fire: assertions are triggered instead.
+      "proxy hostname or ip address invalid",
+      "resolving proxy hostname", "resolving proxy hostname failed", "proxy hostname resolved to ip address",
+      
+      "connecting to proxy ip address", "connecting to proxy ip address failed",
+      "connecting to proxy failed", "connection to proxy created", "connection to proxy terminated",
+      
       "bytes written", "bytes read",
       "request sent", "response received", "request sent and response received",
-      "secure connection established",
-      "connection terminated",
+      
+      "secure connection to server through proxy created", "secure connection to server through proxy terminated",
+      
       "terminated",
     );
   
@@ -118,7 +124,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oSelf.__faoGetAllNonExternalConnections()
       + list(oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort.values())
     );
-
+  
   def __fuCountAllConnections(oSelf):
     return (
       len(oSelf.__aoConnectionsToProxyNotConnectedToAServer) +
@@ -235,7 +241,6 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       return None;
     assert o0Response, \
         "Expected a response but got %s" % repr(o0Response);
-    oSelf.fFireCallbacks("request sent and response received", o0Connection, oRequest, o0Response);
     return o0Response;
   
   @ShowDebugOutput
@@ -380,39 +385,97 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
   ):
     # Create a new socket and return that.
     fShowDebugOutput("Connecting to %s..." % oSelf.oProxyServerURL);
-    oConnection = cHTTPConnection.foConnectTo(
-      sbHostname = oSelf.oProxyServerURL.sbHostname,
-      uPortNumber = oSelf.oProxyServerURL.uPortNumber,
-      n0zConnectTimeoutInSeconds = n0zConnectTimeoutInSeconds,
-      o0SSLContext = oSelf.__o0ProxySSLContext,
-      n0zSecureTimeoutInSeconds = oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds,
-    );
-    assert oConnection, \
-        "Expected connection but got %s" % oConnection;
-    oConnection.fAddCallback("bytes written", oSelf.__fHandleBytesWrittenCallbackFromConnection);
-    oConnection.fAddCallback("bytes read", oSelf.__fHandleBytesReadCallbackFromConnection);
-    oConnection.fAddCallback("request sent", oSelf.__fHandleRequestSentCallbackFromConnection);
-    oConnection.fAddCallback("response received", oSelf.__fHandleResponseReceivedCallbackFromConnection);
-    oConnection.fAddCallback("terminated", oSelf.__fHandleTerminatedCallbackFromConnection);
-    oConnection.fStartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
+    try:
+      oConnection = cHTTPConnection.foConnectTo(
+        sbHostnameOrIPAddress = oSelf.oProxyServerURL.sbHostname,
+        uPortNumber = oSelf.oProxyServerURL.uPortNumber,
+        n0zConnectTimeoutInSeconds = n0zConnectTimeoutInSeconds,
+        o0SSLContext = oSelf.__o0ProxySSLContext,
+        n0zSecureTimeoutInSeconds = oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds,
+        f0HostnameOrIPAddressInvalidCallback = lambda sbHostnameOrIPAddress: oSelf.fFireCallbacks(
+          "proxy hostname or ip address invalid",
+          oProxyServerURL = oSelf.oProxyServerURL,
+        ),
+        f0ResolvingHostnameCallback = lambda sbHostname: oSelf.fFireCallbacks(
+          "resolving proxy hostname",
+          oProxyServerURL = oSelf.oProxyServerURL,
+        ),
+        f0ResolvingHostnameFailedCallback = lambda sbHostname: oSelf.fFireCallbacks(
+          "resolving proxy hostname failed",
+          oProxyServerURL = oSelf.oProxyServerURL,
+        ),
+        f0HostnameResolvedToIPAddressCallback = lambda sbHostname, sIPAddress, sCanonicalName: oSelf.fFireCallbacks(
+          "proxy hostname resolved to ip address",
+          oProxyServerURL = oSelf.oProxyServerURL,
+          sIPAddress = sIPAddress,
+          sCanonicalName = sCanonicalName,
+        ),
+        f0ConnectingToIPAddressCallback = lambda sbHostnameOrIPAddress, uPortNumber, sIPAddress, sbzHostname: oSelf.fFireCallbacks(
+          "connecting to proxy ip address",
+          oProxyServerURL = oSelf.oProxyServerURL,
+          sIPAddress = sIPAddress,
+          sbzHostname = sbzHostname,
+        ),
+        f0ConnectingToIPAddressFailedCallback = lambda oException, sbHostnameOrIPAddress, uPortNumber, sIPAddress, sbzHostname: oSelf.fFireCallbacks(
+          "connecting to proxy ip address failed",
+          oException = oException,
+          oProxyServerURL = oSelf.oProxyServerURL,
+          sIPAddress = sIPAddress,
+          sbzHostname = sbzHostname,
+        ),
+      );
+    except cHTTPConnection.tcExceptions as oException:
+      oSelf.fFireCallbacks(
+        "connecting to proxy failed",
+        oException = oException,
+        oProxyServerURL = oSelf.oProxyServerURL,
+      );
+      raise;
+    else:
+      oSelf.fFireCallbacks(
+        "connection to proxy created",
+        oConnection = oConnection,
+        oProxyServerURL = oSelf.oProxyServerURL,
+      );
+      oConnection.fStartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
+    oConnection.fAddCallbacks({
+      "bytes written": lambda oConnection, sbBytesWritten: oSelf.fFireCallbacks(
+        "bytes written",
+        oConnection = oConnection,
+        sbBytesWritten = sbBytesWritten,
+      ),
+      "bytes read": lambda oConnection, sbBytesRead: oSelf.fFireCallbacks(
+        "bytes read",
+        oConnection = oConnection,
+        sbBytesRead = sbBytesRead,
+      ),
+      "request sent": lambda oConnection, oRequest: oSelf.fFireCallbacks(
+        "request sent",
+        oConnection = oConnection,
+        oRequest = oRequest,
+      ),
+      "response received": lambda oConnection, oResponse: oSelf.fFireCallbacks(
+        "response received",
+        oConnection = oConnection,
+        oResponse = oResponse,
+      ),
+      "request sent and response received": lambda oConnection, oRequest, oResponse: oSelf.fFireCallbacks(
+        "request sent and response received",
+        oConnection = oConnection,
+        oRequest = oRequest,
+        oResponse = oResponse,
+      ),
+      "terminated": oSelf.__fHandleTerminatedCallbackForConnection,
+    });
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.append(oConnection);
-    oSelf.fFireCallbacks("new connection", oConnection);
     return oConnection;
   
-  def __fHandleBytesWrittenCallbackFromConnection(oSelf, oConnection, sbBytesWritten):
-    oSelf.fFireCallbacks("bytes written", oConnection, sbBytesWritten);
-  
-  def __fHandleBytesReadCallbackFromConnection(oSelf, oConnection, sbBytesRead):
-    oSelf.fFireCallbacks("bytes read", oConnection, sbBytesRead);
-  
-  def __fHandleRequestSentCallbackFromConnection(oSelf, oConnection, oRequest):
-    oSelf.fFireCallbacks("request sent", oConnection, oRequest);
-  
-  def __fHandleResponseReceivedCallbackFromConnection(oSelf, oConnection, oReponse):
-    oSelf.fFireCallbacks("response received", oConnection, oReponse);
-  
-  def __fHandleTerminatedCallbackFromConnection(oSelf, oConnection):
-    oSelf.fFireCallbacks("connection terminated", oConnection);
+  def __fHandleTerminatedCallbackForConnection(oSelf, oConnection):
+    oSelf.fFireCallbacks(
+      "connection to proxy terminated",
+      oConnection = oConnection,
+      oProxyServerURL = oSelf.oProxyServerURL
+    );
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
       if oConnection in oSelf.__aoConnectionsToProxyNotConnectedToAServer:
@@ -515,7 +578,18 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort[oServerBaseURL.sbBase] = oConnectionToServerThroughProxy;
     else:
       oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort[oServerBaseURL.sbBase] = oConnectionToServerThroughProxy;
-    oSelf.fFireCallbacks("secure connection established", oConnectionToServerThroughProxy, oServerBaseURL.sbHostname);
+    oSelf.fFireCallbacks(
+      "secure connection to server through proxy created",
+      oConnection = oConnectionToServerThroughProxy,
+      oProxyServerURL = oSelf.oProxyServerURL,
+      oServerURL = oServerBaseURL,
+    );
+    oConnectionToServerThroughProxy.fAddCallback("terminated", lambda oConnection: oSelf.fFireCallbacks(
+      "secure connection to server through proxy terminated",
+      oConnection = oConnection,
+      oProxyServerURL = oSelf.oProxyServerURL,
+      oServerURL = oServerBaseURL,
+    ));
     # and start using it...
     assert oConnectionToServerThroughProxy.fRestartTransaction(oSelf.__n0TransactionTimeoutInSeconds), \
         "Cannot start a connection on a newly created connection?";
@@ -527,6 +601,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     if oSelf.bTerminated:
       return ["terminated"];
     return [s for s in [
+      "server: %s" % str(oSelf.oProxyServerURL),
       "%d connections to proxy server" % len(oSelf.__aoConnectionsToProxyNotConnectedToAServer),
       "%d secure connections to server through proxy" % len(oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort),
       "%d externalized connections to server through proxy" % len(oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort),

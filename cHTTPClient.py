@@ -65,11 +65,15 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
     
     oSelf.fAddEvents(
-      "hostname resolved",
-      "connect failed", "new connection",
+      "server hostname or ip address invalid", 
+      "resolving server hostname", "resolving server hostname failed", "server hostname resolved to ip address",
+      
+      "connecting to server ip address", "connecting to server ip address failed",
+      "connecting to server failed", "connection to server created", "connection to server terminated",
+      
       "bytes written", "bytes read",
       "request sent", "response received", "request sent and response received",
-      "connection terminated",
+      
       "terminated",
     );
   
@@ -96,7 +100,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       # We stopped when there were no connections: we are terminated.
       fShowDebugOutput("Terminated.");
       oSelf.__oTerminatedLock.fRelease();
-      oSelf.fFireEvent("terminated");
+      oSelf.fFireCallbacks("terminated");
     else:
       fShowDebugOutput("Stopping connections to server pools...");
       # Stop all cHTTPConnectionsToServerPool instances
@@ -123,7 +127,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     if len(aoConnectionsToServerPools) == 0:
       fShowDebugOutput("Terminated.");
       oSelf.__oTerminatedLock.fRelease();
-      oSelf.fFireEvent("terminated");
+      oSelf.fFireCallbacks("terminated");
     else:
       fShowDebugOutput("Terminating %d connections to server pools..." % len(aoConnectionsToServerPools));
       for oConnectionsToServerPool in aoConnectionsToServerPools:
@@ -222,50 +226,89 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServer,
         o0SSLContext = o0SSLContext,
       );
-      oConnectionsToServerPool.fAddCallback("hostname resolved", oSelf.__fHandleHostnameResolvedCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("new connection", oSelf.__fHandleNewConnectionCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("connect failed", oSelf.__fHandleConnectFailedCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("bytes read", oSelf.__fHandleBytesReadCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("bytes written", oSelf.__fHandleBytesWrittenCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("request sent", oSelf.__fHandleRequestSentCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("response received", oSelf.__fHandleResponseReceivedCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("request sent and response received", oSelf.__fHandleRequestSentAndResponseReceivedCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("connection terminated", oSelf.__fHandleConnectionTerminatedCallbackFromConnectionsToServerPool);
-      oConnectionsToServerPool.fAddCallback("terminated", oSelf.__fHandleTerminatedCallbackFromConnectionsToServerPool);
+      oConnectionsToServerPool.fAddCallbacks({
+        "server hostname or ip address invalid": lambda oConnectionsToServerPool, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
+          "server hostname or ip address invalid",
+          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+        ),
+        "resolving server hostname": lambda oConnectionsToServerPool, sbHostname: oSelf.fFireCallbacks(
+          "resolving server hostname",
+          sbHostname = sbHostname,
+        ),
+        "resolving server hostname failed": lambda oConnectionsToServerPool, sbHostname: oSelf.fFireCallbacks(
+          "resolving server hostname failed",
+          sbHostname = sbHostname,
+        ),
+        "server hostname resolved to ip address": lambda oConnectionsToServerPool, sbHostname, sIPAddress, sCanonicalName: oSelf.fFireCallbacks(
+          "server hostname resolved to ip address",
+          sbHostname = sbHostname,
+          sIPAddress = sIPAddress,
+          sCanonicalName = sCanonicalName,
+        ),
+        "connecting to server ip address": lambda oConnectionsToServerPool, sbHostnameOrIPAddress, sIPAddress, uPortNumber, sbzHostname: oSelf.fFireCallbacks(
+          "connecting to server ip address",
+          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sIPAddress = sIPAddress,
+          uPortNumber = uPortNumber,
+          sbzHostname = sbzHostname,
+        ),
+        "connecting to server ip address failed": lambda oConnectionsToServerPool, oException, sbHostnameOrIPAddress, sIPAddress, uPortNumber, sbzHostname: oSelf.fFireCallbacks(
+          "connecting to server ip address failed",
+          oException = oException,
+          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sIPAddress = sIPAddress,
+          uPortNumber = uPortNumber,
+          sbzHostname = sbzHostname,
+        ),
+        "connecting to server failed": lambda oConnectionsToServerPool, sbHostnameOrIPAddress, uPortNumber, oException: oSelf.fFireCallbacks(
+          "connecting to server failed",
+          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          uPortNumber = uPortNumber,
+          oException = oException,
+        ),
+        "connection to server created": lambda oConnectionsToServerPool, oConnection, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
+          "connection to server created",
+          oConnection = oConnection,
+          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+        ),
+        "bytes read": lambda oConnectionsToServerPool, oConnection, sbBytesRead: oSelf.fFireCallbacks(
+          "bytes read",
+          oConnection = oConnection,
+          sbBytesRead = sbBytesRead,
+        ),
+        "bytes written": lambda oConnectionsToServerPool, oConnection, sbBytesWritten: oSelf.fFireCallbacks(
+          "bytes written", oConnection, sbBytesWritten,
+        ),
+        "request sent": lambda oConnectionsToServerPool, oConnection, oRequest: oSelf.fFireCallbacks(
+          "request sent",
+          oConnection = oConnection,
+          oRequest = oRequest,
+        ),
+        "response received": lambda oConnectionsToServerPool, oConnection, oResponse: oSelf.fFireCallbacks(
+          "response received",
+          oConnection = oConnection,
+          oResponse = oResponse,
+        ),
+        "request sent and response received": lambda oConnectionsToServerPool, oConnection, oRequest, oResponse: oSelf.fFireCallbacks(
+          "request sent and response received",
+          oConnection = oConnection,
+          oRequest = oRequest,
+          oResponse = oResponse,
+        ),
+        "connection to server terminated": lambda oConnectionsToServerPool, oConnection, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
+          "connection to server terminated",
+          oConnection = oConnection,
+          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+        ),
+        "terminated": oSelf.__fHandleTerminatedCallbackForConnectionsToServerPool,
+      });
       oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort[oURL.sbBase] = oConnectionsToServerPool;
       return oConnectionsToServerPool;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
   
-  def __fHandleHostnameResolvedCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, sbHostname, iFamily, sCanonicalName, sIPAddress):
-    oSelf.fFireCallbacks("hostname resolved", sbHostname = sbHostname, iFamily = iFamily, sCanonicalName = sCanonicalName, sIPAddress = sIPAddress);
-  
-  def __fHandleConnectFailedCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, sbHostname, uPortNumber, oException):
-    oSelf.fFireCallbacks("connect failed", sbHostname, uPortNumber, oException);
-  
-  def __fHandleNewConnectionCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection):
-    oSelf.fFireCallbacks("new connection", oConnection);
-  
-  def __fHandleBytesReadCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, sbBytesRead):
-    oSelf.fFireCallbacks("bytes read", oConnection, sbBytesRead);
-  
-  def __fHandleBytesWrittenCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, sbBytesWritten):
-    oSelf.fFireCallbacks("bytes written", oConnection, sbBytesWritten);
-  
-  def __fHandleRequestSentCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, oRequest):
-    oSelf.fFireCallbacks("request sent", oConnection, oRequest);
-  
-  def __fHandleResponseReceivedCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, oReponse):
-    oSelf.fFireCallbacks("response received", oConnection, oReponse);
-  
-  def __fHandleRequestSentAndResponseReceivedCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection, oRequest, oReponse):
-    oSelf.fFireCallbacks("request sent and response received", oConnection, oRequest, oReponse);
-  
-  def __fHandleConnectionTerminatedCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool, oConnection):
-    oSelf.fFireCallbacks("connection terminated", oConnection);
-  
   @ShowDebugOutput
-  def __fHandleTerminatedCallbackFromConnectionsToServerPool(oSelf, oConnectionsToServerPool):
+  def __fHandleTerminatedCallbackForConnectionsToServerPool(oSelf, oConnectionsToServerPool):
     assert oSelf.__bStopping, \
         "This is really unexpected!";
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
