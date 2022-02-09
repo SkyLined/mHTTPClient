@@ -3,16 +3,14 @@
     "mConsole",
     "mDebugOutput",
     "mFileSystemItem",
-    "mSSL",
-    "mWindowsSDK"
+    "mSSL"
   ],
   "a0sDependentOnProductNames": [
     "mHTTPConnection",
     "mHTTPProtocol",
     "mMultiThreading",
     "mNotProvided",
-    "mTCPIPConnection",
-    "mWindowsSDK"
+    "mTCPIPConnection"
   ],
   "a0sReleaseAdditionalProductNames": [
     "mSSL"
