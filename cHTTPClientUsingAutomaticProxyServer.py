@@ -1,7 +1,9 @@
-import re;
+import os, re;
+
+assert os.name == "nt", \
+  "This module is only implemented for Windows";
 
 from mWindowsSDK.mWinHTTP import *;
-
 try: # mDebugOutput use is Optional
   from mDebugOutput import ShowDebugOutput, fShowDebugOutput;
 except ModuleNotFoundError as oException:

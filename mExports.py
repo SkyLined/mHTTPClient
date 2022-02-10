@@ -1,6 +1,9 @@
+import os;
 from .cHTTPClient import cHTTPClient;
 from .cHTTPClientUsingProxyServer import cHTTPClientUsingProxyServer;
-from .cHTTPClientUsingAutomaticProxyServer import cHTTPClientUsingAutomaticProxyServer;
+if os.name == "nt":
+  from .cHTTPClientUsingAutomaticProxyServer import cHTTPClientUsingAutomaticProxyServer;
+  
 from . import mExceptions;
 # Pass down
 from mHTTPConnection import \
@@ -13,7 +16,6 @@ from mHTTPConnection import \
 __all__ = [
   "cHTTPClient",
   "cHTTPClientUsingProxyServer",
-  "cHTTPClientUsingAutomaticProxyServer",
   "mExceptions",
   # Pass down from mHTTPConnection
   "cHTTPConnection",
@@ -22,3 +24,5 @@ __all__ = [
   "cURL",
   "fs0GetExtensionForMediaType", "fsb0GetMediaTypeForExtension",
 ];
+if os.name == "nt":
+  __all__.append("cHTTPClientUsingAutomaticProxyServer");
