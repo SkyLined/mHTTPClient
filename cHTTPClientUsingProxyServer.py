@@ -263,7 +263,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       for oConnection in oSelf.__aoConnectionsToProxyNotConnectedToAServer:
         try: # Try to start a transaction; this will only succeed on an idle connection.
           oConnection.fStartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
-        except cTransactionalConnectionCannotBeUsedConcurrently:
+        except cTCPIPConnectionCannotBeUsedConcurrentlyException:
           pass; # The connection is already in use
         else:
           fShowDebugOutput("Reusing existing connection to proxy: %s" % repr(oConnection));
@@ -280,7 +280,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       for oIdleSecureConnection in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.values():
         try: # Try to start a transaction; this will only succeed on an idle connection.
           oIdleSecureConnection.fStartTransaction(0);
-        except cTransactionalConnectionCannotBeUsedConcurrently:
+        except cTCPIPConnectionCannotBeUsedConcurrentlyException:
           pass; # The connection is not idle
         else:
           break; # We found an idle connection and have taken ownership by starting a transaction.
@@ -326,8 +326,12 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     # thread to enter the next block of code at a time.
     if not oSelf.__oWaitingForConnectionToBecomeAvailableLock.fbAcquire(oSelf.__nzConnectToProxyTimeoutInSeconds):
       # Another thread was waiting first and we timed out before a connection became available.
-      raise cMaxConnectionsReachedException(
-        "Maximum number of active connections reached and all existing connections are busy.",
+      raise cHTTPMaxConnectionsToServerReachedException(
+        "Maximum number of connections to proxy reached.",
+        dxDetails = {
+          "bServerIsAProxy": True,
+          "uMaxNumberOfConnections": oSelf.__u0MaxNumberOfConnectionsToProxy, # Cannot be None at this point
+        },
       );
     try:
       # Wait until transactions can be started on one or more of the existing connections:
@@ -341,8 +345,12 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       );
       if not aoConnectionsWithStartedTransactions:
         # We timed out before a connection became available.
-        raise cMaxConnectionsReachedException(
-          "Maximum number of active connections reached and all existing connections are busy.",
+       raise cHTTPMaxConnectionsToServerReachedException(
+          "Maximum number of connections to proxy reached.",
+          dxDetails = {
+            "bServerIsAProxy": True,
+            "uMaxNumberOfConnections": oSelf.__u0MaxNumberOfConnectionsToProxy, # Cannot be None at this point
+          },
         );
       # If one of the available connections is a non-secure connection, reuse it:
       for oConnection in aoConnectionsWithStartedTransactions:
@@ -548,7 +556,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     if oConnectResponse.uStatusCode != 200:
       # I am not entirely sure if we can trust the connection after this, so let's close it to prevent issues:
       oConnectionToProxy.fDisconnect();
-      raise cHTTPFailedToConnectToProxyException(
+      raise cHTTPClientFailedToConnectToServerThroughProxyException(
         "The proxy did not accept our CONNECT request.",
         {"oConnectRequest": oConnectRequest, "oConnectResponse": oConnectResponse},
       );
