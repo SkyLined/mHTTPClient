@@ -142,6 +142,14 @@ def fTestClient(
     oClientSocket.recv(0x1000);
     oConsole.fOutput("Out-of-band data server sending valid response with out-of-band data...");
     oClientSocket.send(oResponse.fsbSerialize() + b"X");
+    oConsole.fOutput("Out-of-band data server receiving second request...");
+    try:
+      sbUnexpectedRequest = oClientSocket.recv(0x1000);
+      assert sbUnexpectedRequest != b"";
+    except:
+      oConsole.fOutput("Out-of-band data server connection closed as expected.");
+    else:
+      raise AssertionError("Client appears to have accepted out-of-band data: %s" % repr(sbUnexpectedRequest));
     oConsole.fOutput("Out-of-band data server thread terminated.");
     oClientSocket.close();
   
@@ -210,7 +218,7 @@ def fTestClient(
   
   for (uNumberOfRequests, oURL, cExpectedExceptionClass, acAcceptableExceptionClasses, auAcceptableStatusCodes) in (
     (1, oUnknownHostnameURL,
-        cDNSUnknownHostnameException, [],
+        cTCPIPDNSUnknownHostnameException, [],
         [400]),
     (1, oInvalidAddressURL,
         cTCPIPInvalidAddressException, [],

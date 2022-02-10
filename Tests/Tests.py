@@ -98,6 +98,7 @@ try:
       import mTCPIPConnection, mHTTPConnection, mHTTPProtocol;
       m0DebugOutput.fEnableDebugOutputForModule(mHTTPClient);
       m0DebugOutput.fEnableDebugOutputForModule(mHTTPConnection);
+      m0DebugOutput.fEnableDebugOutputForModule(mTCPIPConnection);
       # Having everything from mHTTPProtocol output debug messages may be a bit too verbose, so
       # I've disabled output from the HTTP header classes to keep it reasonably clean.
       # m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPHeader);
@@ -105,7 +106,6 @@ try:
       m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPRequest);
       m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPResponse);
       m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.iHTTPMessage);
-      m0DebugOutput.fEnableDebugOutputForModule(mTCPIPConnection);
       if m0SSL is not None:
         m0DebugOutput.fEnableDebugOutputForModule(m0SSL);
       # Outputting debug information is slow, so increase the timeout!
