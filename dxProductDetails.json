@@ -13,6 +13,7 @@
     "mTCPIPConnection"
   ],
   "a0sReleaseAdditionalProductNames": [
+    "mWindowsSDK",
     "mSSL"
   ],
   "asProductTypes": [
