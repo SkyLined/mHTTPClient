@@ -87,10 +87,10 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
       if oSelf.bTerminated:
-        return fShowDebugOutput("Already terminated");
+        return fShowDebugOutput(oSelf, "Already terminated");
       if oSelf.__bStopping:
-        return fShowDebugOutput("Already stopping");
-      fShowDebugOutput("Stopping...");
+        return fShowDebugOutput(oSelf, "Already stopping");
+      fShowDebugOutput(oSelf, "Stopping...");
       # Prevent any new cHTTPConnectionsToServerPool instances from being created.
       oSelf.__bStopping = True;
       # Grab a list of active cHTTPConnectionsToServerPool instances that need to be stopped.
@@ -99,11 +99,11 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     if len(aoConnectionsToServerPools) == 0:
       # We stopped when there were no connections: we are terminated.
-      fShowDebugOutput("Terminated.");
+      fShowDebugOutput(oSelf, "Terminated.");
       oSelf.__oTerminatedLock.fRelease();
       oSelf.fFireCallbacks("terminated");
     else:
-      fShowDebugOutput("Stopping connections to server pools...");
+      fShowDebugOutput(oSelf, "Stopping connections to server pools...");
       # Stop all cHTTPConnectionsToServerPool instances
       for oConnectionsToServerPool in aoConnectionsToServerPools:
         oConnectionsToServerPool.fStop();
@@ -117,8 +117,8 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
       if oSelf.bTerminated:
-        return fShowDebugOutput("Already terminated.");
-      fShowDebugOutput("Terminating...");
+        return fShowDebugOutput(oSelf, "Already terminated.");
+      fShowDebugOutput(oSelf, "Terminating...");
       oSelf.__bStopping = True;
       # Grab a list of active cHTTPConnectionsToServerPool instances that need to be terminated.
       aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort.values());
@@ -126,11 +126,11 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     # Terminate all cHTTPConnectionsToServerPool instances
     if len(aoConnectionsToServerPools) == 0:
-      fShowDebugOutput("Terminated.");
+      fShowDebugOutput(oSelf, "Terminated.");
       oSelf.__oTerminatedLock.fRelease();
       oSelf.fFireCallbacks("terminated");
     else:
-      fShowDebugOutput("Terminating %d connections to server pools..." % len(aoConnectionsToServerPools));
+      fShowDebugOutput(oSelf, "Terminating %d connections to server pools..." % len(aoConnectionsToServerPools));
       for oConnectionsToServerPool in aoConnectionsToServerPools:
         oConnectionsToServerPool.fTerminate();
   
@@ -157,11 +157,11 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     u0MaxNumberOfChunksBeforeDisconnecting = None, # disconnect and return response once this many chunks are received.
   ):
     if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
+      fShowDebugOutput(oSelf, "Stopping.");
       return None;
     oConnectionsToServerPool = oSelf.__foGetConnectionsToServerPoolForURL(oURL);
     if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
+      fShowDebugOutput(oSelf, "Stopping.");
       return None;
     o0Response = oConnectionsToServerPool.fo0SendRequestAndReceiveResponse(
       oRequest,
@@ -178,7 +178,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
     );
     if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
+      fShowDebugOutput(oSelf, "Stopping.");
       return None;
     assert o0Response, \
         "Expected a response but got %s" % repr(o0Response);
@@ -187,11 +187,11 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   @ShowDebugOutput
   def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bSecure = True):
     if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
+      fShowDebugOutput(oSelf, "Stopping.");
       return None;
     oConnectionsToServerPool = oSelf.__foGetConnectionsToServerPoolForURL(oURL);
     if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
+      fShowDebugOutput(oSelf, "Stopping.");
       return None;
     return oConnectionsToServerPool.fo0GetConnectionAndStartTransaction(
       n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
@@ -221,7 +221,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       else:
         # The URL may either be "http://" or we will not be able to create secure connections when asked.
         o0SSLContext = None;
-      fShowDebugOutput("Creating new cConnectionsToServerPool for %s" % oURL.sbBase);
+      fShowDebugOutput(oSelf, "Creating new cConnectionsToServerPool for %s" % oURL.sbBase);
       oConnectionsToServerPool = cHTTPConnectionsToServerPool(
         oServerBaseURL = oURL.oBase,
         u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServer,
@@ -316,7 +316,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     try:
       for sbProtocolHostPort in oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort:
         if oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort[sbProtocolHostPort] == oConnectionsToServerPool:
-          fShowDebugOutput("Removing cConnectionsToServerPool for %s" % sbProtocolHostPort);
+          fShowDebugOutput(oSelf, "Removing cConnectionsToServerPool for %s" % sbProtocolHostPort);
           del oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort[sbProtocolHostPort];
           break;
       else:
@@ -325,11 +325,12 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       if not oSelf.__bStopping:
         return;
       if len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort) > 0:
+        fShowDebugOutput(oSelf, "There are %d connections to server pools left." % len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort));
         return;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     # We are stopping and the last connection just terminated: we are terminated.
-    fShowDebugOutput("Terminated.");
+    fShowDebugOutput(oSelf, "Terminated.");
     oSelf.__oTerminatedLock.fRelease();
     oSelf.fFireCallbacks("terminated");
   
