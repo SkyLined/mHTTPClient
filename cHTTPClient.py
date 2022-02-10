@@ -29,8 +29,6 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   n0zDefaultSecureTimeoutInSeconds = 5;
   n0zDefaultTransactionTimeoutInSeconds = 10;
   
-  cHTTPFailedToConnectToProxyException = cHTTPFailedToConnectToProxyException;
-  
   @ShowDebugOutput
   def __init__(oSelf,
     o0zCertificateStore = zNotProvided,
@@ -185,7 +183,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     return o0Response;
   
   @ShowDebugOutput
-  def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bSecure = True):
+  def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bDoNotUseSLL = False):
     if oSelf.__bStopping:
       fShowDebugOutput(oSelf, "Stopping.");
       return None;
@@ -195,7 +193,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       return None;
     return oConnectionsToServerPool.fo0GetConnectionAndStartTransaction(
       n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
-      bSecure = bSecure,
+      bDoNotUseSLL = bDoNotUseSLL,
       n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,
       n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
     );
