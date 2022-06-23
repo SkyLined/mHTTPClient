@@ -137,7 +137,8 @@ try:
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cCertificateStore instance ".ljust(160, "\u2500"));
   
   if m0SSL is not None:
-    sCertificateAuthorityFolderPath = os.path.join(os.path.dirname(__file__), "tmp");
+    import tempfile;
+    sCertificateAuthorityFolderPath = os.path.join(tempfile.gettempdir(), "tmp");
   
     oCertificateAuthority = m0SSL.cCertificateAuthority(sCertificateAuthorityFolderPath, "mHTTP Test");
     oConsole.fOutput("  oCertificateAuthority = ", str(oCertificateAuthority));
