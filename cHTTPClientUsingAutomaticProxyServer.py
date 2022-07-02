@@ -43,13 +43,13 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
   @ShowDebugOutput
   def __init__(oSelf,
     o0zCertificateStore = zNotProvided, 
-    bAllowUnverifiableCertificatesForProxy = False, bCheckProxyHostname = True,
+    bVerifyCertificatesForProxy = True, bCheckProxyHostname = True,
     u0zMaxNumberOfConnectionsToServerWithoutProxy = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
     n0zConnectTimeoutInSeconds = zNotProvided, n0zSecureTimeoutInSeconds = zNotProvided, n0zTransactionTimeoutInSeconds = zNotProvided,
     n0zConnectToProxyTimeoutInSeconds = zNotProvided, n0zSecureConnectionToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
-    bAllowUnverifiableCertificates = False, bCheckHostname = True,
+    bVerifyCertificates = True, bCheckHostname = True,
   ):
     oSelf.__hInternet = oWinHTTPDLL.WinHttpOpen(
       LPCWSTR("User-Agent"), # LPCWSTR pszAgentW
@@ -70,7 +70,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       c0CertificateStore() if c0CertificateStore else
       None
     );
-    oSelf.__bAllowUnverifiableCertificatesForProxy = bAllowUnverifiableCertificatesForProxy;
+    oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
     oSelf.__bCheckProxyHostname = bCheckProxyHostname;
     #
     oSelf.__u0zMaxNumberOfConnectionsToServerWithoutProxy = fxzGetFirstProvidedValueIfAny(u0zMaxNumberOfConnectionsToServerWithoutProxy, oSelf.u0zDefaultMaxNumberOfConnectionsToServerWithoutProxy);
@@ -86,7 +86,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     #
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     #
-    oSelf.__bAllowUnverifiableCertificates = bAllowUnverifiableCertificates;
+    oSelf.__bVerifyCertificates = bVerifyCertificates;
     oSelf.__bCheckHostname = bCheckHostname;
     #############################
     oSelf.__oPropertyAccessTransactionLock = cLock(
@@ -325,7 +325,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
           n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
-          bAllowUnverifiableCertificates = oSelf.__bAllowUnverifiableCertificates,
+          bVerifyCertificates = oSelf.__bVerifyCertificates,
           bCheckHostname = oSelf.__bCheckHostname,
         );
         oClient.fAddCallbacks({
@@ -398,7 +398,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       if oClient is None:
         oClient = oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL] = cHTTPClientUsingProxyServer(
           o0ProxyServerURL,
-          bAllowUnverifiableCertificatesForProxy = oSelf.__bAllowUnverifiableCertificatesForProxy,
+          bVerifyCertificatesForProxy = oSelf.__bVerifyCertificatesForProxy,
           bCheckProxyHostname = oSelf.__bCheckProxyHostname,
           o0zCertificateStore = oSelf.__o0CertificateStore,
           u0zMaxNumberOfConnectionsToProxy = oSelf.__u0zMaxNumberOfConnectionsToProxy,
@@ -406,7 +406,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zSecureConnectionToProxyTimeoutInSeconds = oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds,
           n0zSecureConnectionToServerTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
-          bAllowUnverifiableCertificates = oSelf.__bAllowUnverifiableCertificates,
+          bVerifyCertificates = oSelf.__bVerifyCertificates,
           bCheckHostname = oSelf.__bCheckHostname,
         );
         oClient.fAddCallbacks({

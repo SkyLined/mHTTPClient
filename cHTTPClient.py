@@ -36,7 +36,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     n0zConnectTimeoutInSeconds = zNotProvided,
     n0zSecureTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
-    bAllowUnverifiableCertificates = False,
+    bVerifyCertificates = True,
     bCheckHostname = True,
     f0ResolveHostnameCallback = None,
   ):
@@ -50,7 +50,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__n0zConnectTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zConnectTimeoutInSeconds, oSelf.n0zDefaultConnectTimeoutInSeconds);
     oSelf.__n0zSecureTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureTimeoutInSeconds, oSelf.n0zDefaultSecureTimeoutInSeconds);
     oSelf.__n0zTransactionTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zTransactionTimeoutInSeconds, oSelf.n0zDefaultTransactionTimeoutInSeconds);
-    oSelf.__bAllowUnverifiableCertificates = bAllowUnverifiableCertificates;
+    oSelf.__bVerifyCertificates = bVerifyCertificates;
     oSelf.__bCheckHostname = bCheckHostname;
     oSelf.__f0ResolveHostnameCallback = f0ResolveHostnameCallback;
     
@@ -209,13 +209,13 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         return oConnectionsToServerPool;
       # No connections to the server have been made before: create a new Pool.
       if oURL.bSecure and oSelf.__o0CertificateStore:
-        if oSelf.__bAllowUnverifiableCertificates:
-          o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
-        else:
+        if oSelf.__bVerifyCertificates:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
             oURL.sbHostname,
             bCheckHostname = oSelf.__bCheckHostname
           );
+        else:
+          o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
       else:
         # The URL may either be "http://" or we will not be able to create secure connections when asked.
         o0SSLContext = None;

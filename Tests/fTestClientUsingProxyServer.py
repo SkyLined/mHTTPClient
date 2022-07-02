@@ -29,7 +29,7 @@ def fTestClientUsingProxyServer(
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClientUsingProxyServer instance... ", sPadding = "\u2500");
   oHTTPClient = cHTTPClientUsingProxyServer(
     oProxyServerURL = oProxyServerURL,
-    bAllowUnverifiableCertificatesForProxy = True,
+    bVerifyCertificates = False,
     o0zCertificateStore = oCertificateStore,
     n0zConnectToProxyTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
   );

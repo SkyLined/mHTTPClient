@@ -39,18 +39,18 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
   @ShowDebugOutput
   def __init__(oSelf,
     oProxyServerURL,
-    bAllowUnverifiableCertificatesForProxy = False, bCheckProxyHostname = True,
+    bVerifyCertificatesForProxy = True, bCheckProxyHostname = True,
     o0zCertificateStore = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
     n0zConnectToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
-    bAllowUnverifiableCertificates = False,
+    bVerifyCertificates = True,
     bCheckHostname = True,
   ):
     oSelf.oProxyServerURL = oProxyServerURL;
-    oSelf.__bAllowUnverifiableCertificatesForProxy = bAllowUnverifiableCertificatesForProxy;
+    oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
     oSelf.__bCheckProxyHostname = bCheckProxyHostname;
     
     oSelf.__o0CertificateStore = (
@@ -66,7 +66,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToProxyTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToProxyTimeoutInSeconds);
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     oSelf.__n0TransactionTimeoutInSeconds = fxGetFirstProvidedValue(n0zTransactionTimeoutInSeconds, oSelf.n0DefaultTransactionTimeoutInSeconds);
-    oSelf.__bAllowUnverifiableCertificates = bAllowUnverifiableCertificates;
+    oSelf.__bVerifyCertificates = bVerifyCertificates;
     oSelf.__bCheckHostname = bCheckHostname;
     
     if not oProxyServerURL.bSecure:
@@ -74,13 +74,13 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     else:
       assert oSelf.__o0CertificateStore, \
           "A secure proxy cannot be used if no certificate store is available!";
-      if bAllowUnverifiableCertificatesForProxy:
-        oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
-      else:
+      if bVerifyCertificatesForProxy:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oProxyServerURL.sbHostname,
           oSelf.__bCheckProxyHostname,
         );
+      else:
+        oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
     
     oSelf.__oWaitingForConnectionToBecomeAvailableLock = cLock(
       "%s.__oWaitingForConnectionToBecomeAvailableLock" % oSelf.__class__.__name__,
@@ -568,13 +568,13 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       # Wrap the connection in SSL.
       assert oSelf.__o0CertificateStore, \
           "Cannot make secure requests without a certificate store";
-      if oSelf.__bAllowUnverifiableCertificates:
-        oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
-      else:
+      if oSelf.__bVerifyCertificates:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oServerBaseURL.sbHostname,
           oSelf.__bCheckHostname
         );
+      else:
+        oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
       oConnectionToServerThroughProxy.fSecure(
         oSSLContext = oSSLContext,
         n0zTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,

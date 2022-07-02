@@ -9,7 +9,7 @@ def fTestClientUsingAutomaticProxyServer(
 ):
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClientUsingAutomaticProxyServer instance... ", sPadding = "\u2500");
   oHTTPClient = cHTTPClientUsingAutomaticProxyServer(
-    bAllowUnverifiableCertificatesForProxy = True,
+    bVerifyCertificates = False,
     o0zCertificateStore = oCertificateStore,
     n0zConnectTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
   );
