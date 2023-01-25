@@ -575,7 +575,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       oClient = oClient,
       o0ProxyServerURL = oClient.oProxyServerURL,
     );
-    sLowerProxyServerURL = str(o0ProxyServerURL).lower();
+    sLowerProxyServerURL = str(oClient.oProxyServerURL).lower();
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
       assert oClient is oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL], \
