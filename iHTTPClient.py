@@ -6,9 +6,11 @@ except ModuleNotFoundError as oException:
   ShowDebugOutput = lambda fx: fx; # NOP
   fShowDebugOutput = lambda x, s0 = None: x; # NOP
 
-from mHTTPConnection import cHTTPConnection, cHTTPConnectionsToServerPool, cURL;
-from mMultiThreading import cLock, cWithCallbacks;
-from mNotProvided import *;
+from mHTTPConnection import cHTTPConnection, cURL;
+from mMultiThreading import cWithCallbacks;
+from mNotProvided import \
+    fbIsProvided, \
+    zNotProvided;
 try: # SSL support is optional.
   import mSSL as m0SSL;
 except:

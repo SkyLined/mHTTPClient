@@ -1,8 +1,19 @@
 import socket, threading;
-from mHTTPClient import *;
-from mHTTPClient.mExceptions import *;
-from mMultiThreading import cThread;
+
 from mConsole import oConsole;
+from mHTTPConnection import cHTTPConnection;
+from mHTTPConnection.mExceptions import \
+    cHTTPOutOfBandDataException, \
+    cHTTPInvalidMessageException, \
+    cTCPIPDataTimeoutException, \
+    cTCPIPDNSUnknownHostnameException, \
+    cTCPIPInvalidAddressException, \
+    cTCPIPConnectionDisconnectedException, \
+    cTCPIPConnectionRefusedException, \
+    cTCPIPConnectionShutdownException, \
+    cTCPIPConnectTimeoutException;
+from mHTTPProtocol import cURL;
+from mMultiThreading import cThread;
 
 NORMAL =            0x0F07; # Light gray
 INFO =              0x0F0F; # Bright white

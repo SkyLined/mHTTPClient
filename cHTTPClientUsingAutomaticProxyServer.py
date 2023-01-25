@@ -3,7 +3,25 @@ import os, re;
 assert os.name == "nt", \
   "This module is only implemented for Windows";
 
-from mWindowsSDK.mWinHTTP import *;
+from mWindowsSDK.mWinHTTP import \
+    DWORD, \
+    LPCWSTR, \
+    NULL, \
+    oWinHTTPDLL, \
+    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, \
+    WINHTTP_ACCESS_TYPE_NAMED_PROXY, \
+    WINHTTP_ACCESS_TYPE_NO_PROXY, \
+    WINHTTP_AUTO_DETECT_TYPE_DHCP, \
+    WINHTTP_AUTO_DETECT_TYPE_DNS_A, \
+    WINHTTP_AUTOPROXY_ALLOW_AUTOCONFIG, \
+    WINHTTP_AUTOPROXY_ALLOW_CM, \
+    WINHTTP_AUTOPROXY_ALLOW_STATIC, \
+    WINHTTP_AUTOPROXY_AUTO_DETECT, \
+    WINHTTP_AUTOPROXY_OPTIONS, \
+    WINHTTP_AUTOPROXY_SORT_RESULTS, \
+    WINHTTP_NO_PROXY_BYPASS, \
+    WINHTTP_NO_PROXY_NAME, \
+    WINHTTP_PROXY_INFO;
 try: # mDebugOutput use is Optional
   from mDebugOutput import ShowDebugOutput, fShowDebugOutput;
 except ModuleNotFoundError as oException:
@@ -14,7 +32,10 @@ except ModuleNotFoundError as oException:
 
 from mMultiThreading import cLock, cWithCallbacks;
 from mHTTPProtocol import cURL;
-from mNotProvided import *;
+from mNotProvided import \
+    fbIsProvided, \
+    fxzGetFirstProvidedValueIfAny, \
+    zNotProvided;
 try: # SSL support is optional.
   from mSSL import cCertificateStore as c0CertificateStore;
 except:

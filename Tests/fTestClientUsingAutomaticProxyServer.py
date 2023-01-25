@@ -1,5 +1,6 @@
-from mHTTPClient import cHTTPClientUsingAutomaticProxyServer;
 from mConsole import oConsole;
+from mHTTPClient import cHTTPClientUsingAutomaticProxyServer;
+
 from fTestClient import fTestClient;
 
 def fTestClientUsingAutomaticProxyServer(
