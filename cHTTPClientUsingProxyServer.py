@@ -372,8 +372,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
           # return the connection that can be reused.
           return oConnection;
       # There are only secure connections; terminate the first one and end the transaction on the others.
-      for oSecureConnection in aoAvailableConnectionsWithStartedTransactions:
-        if oSecureConnection == aoAvailableConnectionsWithStartedTransactions[0]:
+      for oSecureConnection in aoConnectionsWithStartedTransactions:
+        if oSecureConnection == aoConnectionsWithStartedTransactions[0]:
           oSecureConnection.fDisconnect();
         else:
           oSecureConnection.fEndTransaction();
