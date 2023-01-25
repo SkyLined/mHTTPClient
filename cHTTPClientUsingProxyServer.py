@@ -228,29 +228,31 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         bSecure = True,
         bExternalize = False,
       );
-    if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
-      return None;
-    assert o0Connection, \
-        "Expected a connection but got %s" % repr(o0Connection);
-    o0Response = o0Connection.fo0SendRequestAndReceiveResponse(
-      oRequest,
-      bStartTransaction = False,
-      u0zMaxStatusLineSize = u0zMaxStatusLineSize,
-      u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
-      u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
-      u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
-      u0zMaxBodySize = u0zMaxBodySize,
-      u0zMaxChunkSize = u0zMaxChunkSize,
-      u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
-      u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
-    );
-    if oSelf.__bStopping:
-      fShowDebugOutput("Stopping.");
-      return None;
-    assert o0Response, \
-        "Expected a response but got %s" % repr(o0Response);
-    return o0Response;
+    try:
+      if oSelf.__bStopping:
+        fShowDebugOutput("Stopping.");
+        return None;
+      assert o0Connection, \
+          "Expected a connection but got %s" % repr(o0Connection);
+      o0Response = o0Connection.fo0SendRequestAndReceiveResponse(
+        oRequest,
+        u0zMaxStatusLineSize = u0zMaxStatusLineSize,
+        u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
+        u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
+        u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
+        u0zMaxBodySize = u0zMaxBodySize,
+        u0zMaxChunkSize = u0zMaxChunkSize,
+        u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
+        u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
+      );
+      if oSelf.__bStopping:
+        fShowDebugOutput("Stopping.");
+        return None;
+      assert o0Response, \
+          "Expected a response but got %s" % repr(o0Response);
+      return o0Response;
+    finally:
+      o0Connection.fEndTransaction();
   
   @ShowDebugOutput
   def fo0GetConnectionAndStartTransactionForURL(oSelf, oServerBaseURL, bSecure = True):
