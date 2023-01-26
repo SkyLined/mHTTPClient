@@ -234,7 +234,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         return None;
       assert o0Connection, \
           "Expected a connection but got %s" % repr(o0Connection);
-      o0Response = o0Connection.fo0SendRequestAndReceiveResponse(
+      return o0Connection.foSendRequestAndReceiveResponse(
         oRequest,
         u0zMaxStatusLineSize = u0zMaxStatusLineSize,
         u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
@@ -245,12 +245,6 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
         u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
       );
-      if oSelf.__bStopping:
-        fShowDebugOutput("Stopping.");
-        return None;
-      assert o0Response, \
-          "Expected a response but got %s" % repr(o0Response);
-      return o0Response;
     finally:
       o0Connection.fEndTransaction();
   
@@ -555,14 +549,11 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         b"Connection": b"Keep-Alive",
       }),
     );
-    o0ConnectResponse = oConnectionToProxy.fo0SendRequestAndReceiveResponse(oConnectRequest);
+    oConnectResponse = oConnectionToProxy.foSendRequestAndReceiveResponse(oConnectRequest);
     # oConnectResponse can be None if we are stopping.
     if oSelf.__bStopping:
       fShowDebugOutput("Stopping.");
       return None;
-    assert o0ConnectResponse, \
-        "Expected a CONNECT response but got %s" % o0ConnectResponse;
-    oConnectResponse = o0ConnectResponse;
     if oConnectResponse.uStatusCode != 200:
       # I am not entirely sure if we can trust the connection after this, so let's close it to prevent issues:
       oConnectionToProxy.fDisconnect();
