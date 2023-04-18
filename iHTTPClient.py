@@ -7,8 +7,10 @@ except ModuleNotFoundError as oException:
   fShowDebugOutput = lambda x, s0 = None: x; # NOP
 
 from mHTTPConnection import cHTTPConnection, cURL;
+from mHTTPProtocol import cHTTPHeaders;
 from mMultiThreading import cWithCallbacks;
 from mNotProvided import \
+    fAssertTypes, \
     fbIsProvided, \
     zNotProvided;
 try: # SSL support is optional.
@@ -56,6 +58,23 @@ class iHTTPClient(cWithCallbacks):
     u0zMaxNumberOfChunks = zNotProvided,
     u0MaxNumberOfChunksBeforeDisconnecting = None, # disconnect and return response once this many chunks are received.
   ):
+    fAssertTypes({
+      oURL: (oURL, cURL),
+      sbzMethod: (sbzMethod, bytes, zNotProvided),
+      sbzVersion: (sbzVersion, bytes, zNotProvided),
+      o0zHeaders: (o0zHeaders, cHTTPHeaders, None, zNotProvided),
+      sb0Body: (sb0Body, bytes, None),
+      s0Data: (s0Data, str, None),
+      a0sbBodyChunks: (s0Data, [bytes], None),
+      u0zMaxStatusLineSize: (u0zMaxStatusLineSize, int, None, zNotProvided),
+      u0zMaxHeaderNameSize: (u0zMaxHeaderNameSize, int, None, zNotProvided),
+      u0zMaxHeaderValueSize: (u0zMaxHeaderValueSize, int, None, zNotProvided),
+      u0zMaxNumberOfHeaders: (u0zMaxNumberOfHeaders, int, None, zNotProvided),
+      u0zMaxBodySize: (u0zMaxBodySize, int, None, zNotProvided),
+      u0zMaxChunkSize: (u0zMaxChunkSize, int, None, zNotProvided),
+      u0zMaxNumberOfChunks: (u0zMaxNumberOfChunks, int, None, zNotProvided),
+      u0MaxNumberOfChunksBeforeDisconnecting: (u0MaxNumberOfChunksBeforeDisconnecting, int, None),
+    });
     if oSelf.bStopping:
       fShowDebugOutput("Stopping.");
       return None;
@@ -96,6 +115,23 @@ class iHTTPClient(cWithCallbacks):
     u0zMaxNumberOfChunks = zNotProvided,
     u0MaxNumberOfChunksBeforeDisconnecting = None, # disconnect and return response once this many chunks are received.
   ):
+    fAssertTypes({
+      oURL: (oURL, cURL),
+      sbzMethod: (sbzMethod, bytes, zNotProvided),
+      sbzVersion: (sbzVersion, bytes, zNotProvided),
+      o0zHeaders: (o0zHeaders, cHTTPHeaders, None, zNotProvided),
+      sb0Body: (sb0Body, bytes, None),
+      s0Data: (s0Data, str, None),
+      a0sbBodyChunks: (s0Data, [bytes], None),
+      u0zMaxStatusLineSize: (u0zMaxStatusLineSize, int, None, zNotProvided),
+      u0zMaxHeaderNameSize: (u0zMaxHeaderNameSize, int, None, zNotProvided),
+      u0zMaxHeaderValueSize: (u0zMaxHeaderValueSize, int, None, zNotProvided),
+      u0zMaxNumberOfHeaders: (u0zMaxNumberOfHeaders, int, None, zNotProvided),
+      u0zMaxBodySize: (u0zMaxBodySize, int, None, zNotProvided),
+      u0zMaxChunkSize: (u0zMaxChunkSize, int, None, zNotProvided),
+      u0zMaxNumberOfChunks: (u0zMaxNumberOfChunks, int, None, zNotProvided),
+      u0MaxNumberOfChunksBeforeDisconnecting: (u0MaxNumberOfChunksBeforeDisconnecting, int, None),
+    });
     if oSelf.bStopping:
       fShowDebugOutput("Stopping.");
       return (None, None);
@@ -126,6 +162,17 @@ class iHTTPClient(cWithCallbacks):
     sbzMethod = zNotProvided, sbzVersion = zNotProvided, o0zHeaders = zNotProvided, sb0Body = None, s0Data = None, a0sbBodyChunks = None,
     o0AdditionalHeaders = None, bAutomaticallyAddContentLengthHeader = False
   ):
+    fAssertTypes({
+      oURL: (oURL, cURL),
+      sbzMethod: (sbzMethod, bytes, zNotProvided),
+      sbzVersion: (sbzVersion, bytes, zNotProvided),
+      o0zHeaders: (o0zHeaders, cHTTPHeaders, None, zNotProvided),
+      sb0Body: (sb0Body, bytes, None),
+      s0Data: (s0Data, str, None),
+      a0sbBodyChunks: (s0Data, [bytes], None),
+      o0AdditionalHeaders: (o0AdditionalHeaders, cHTTPHeaders, None),
+      bAutomaticallyAddContentLengthHeader: (bAutomaticallyAddContentLengthHeader, bool),
+    });
     o0ProxyServerURL = oSelf.fo0GetProxyServerURLForURL(oURL);
     if oSelf.bStopping:
       fShowDebugOutput("Stopping.");
