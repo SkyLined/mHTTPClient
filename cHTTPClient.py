@@ -35,6 +35,8 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   
   @ShowDebugOutput
   def __init__(oSelf,
+    *,
+    o0CookieStore = None,
     o0zCertificateStore = zNotProvided,
     u0zMaxNumberOfConnectionsToServer = zNotProvided,
     n0zConnectTimeoutInSeconds = zNotProvided,
@@ -44,6 +46,9 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     bCheckHostname = True,
     f0ResolveHostnameCallback = None,
   ):
+    super().__init__(
+      o0CookieStore = o0CookieStore,
+    );
     oSelf.__o0CertificateStore = (
       o0zCertificateStore if fbIsProvided(o0zCertificateStore) else
       c0CertificateStore() if c0CertificateStore else
@@ -148,7 +153,9 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   
   @ShowDebugOutput
   def fo0GetResponseForRequestAndURL(oSelf,
-    oRequest, oURL,
+    oRequest, 
+    oURL,
+    *,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -184,6 +191,8 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       return None;
     assert o0Response, \
         "Expected a response but got %s" % repr(o0Response);
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
     return o0Response;
   
   @ShowDebugOutput
@@ -341,10 +350,13 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     # approximates the real values.
     if oSelf.bTerminated:
       return ["terminated"];
+    o0CookieStore = oSelf.o0CookieStore;
     return [s for s in [
       "connected to %d servers" % len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort),
       "stopping" if oSelf.__bStopping else None,
-    ] if s];
+    ] if s] + (
+      o0CookieStore.fasGetDetails() if o0CookieStore else []
+    );
 
 for cException in acExceptions:
   setattr(cHTTPClient, cException.__name__, cException);

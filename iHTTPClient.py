@@ -31,6 +31,12 @@ class iHTTPClient(cWithCallbacks):
   n0zDefaultSecureTimeoutInSeconds = 5;
   n0zDefaultTransactionTimeoutInSeconds = 10;
   
+  def __init__(oSelf,
+    *,
+    o0CookieStore = None,
+  ):
+    oSelf.o0CookieStore = o0CookieStore;
+
   @staticmethod
   def foURLFromString(sURL):
     return cURL.foFromBytesString(bytes(sURL, "ascii", "strict"));
@@ -48,7 +54,13 @@ class iHTTPClient(cWithCallbacks):
   @ShowDebugOutput
   def fo0GetResponseForURL(oSelf,
     oURL,
-    sbzMethod = zNotProvided, sbzVersion = zNotProvided, o0zHeaders = zNotProvided, sb0Body = None, s0Data = None, a0sbBodyChunks = None,
+    *,
+    sbzMethod = zNotProvided,
+    sbzVersion = zNotProvided,
+    o0zHeaders = zNotProvided,
+    sb0Body = None,
+    s0Data = None,
+    a0sbBodyChunks = None,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -81,8 +93,11 @@ class iHTTPClient(cWithCallbacks):
     oRequest = oSelf.foGetRequestForURL(
       oURL, sbzMethod, sbzVersion, o0zHeaders, sb0Body, s0Data, a0sbBodyChunks
     );
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
     o0Response = oSelf.fo0GetResponseForRequestAndURL(
-      oRequest, oURL,
+      oRequest,
+      oURL,
       u0zMaxStatusLineSize = u0zMaxStatusLineSize,
       u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
       u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
@@ -97,6 +112,8 @@ class iHTTPClient(cWithCallbacks):
       return None;
     assert o0Response, \
         "Expected a response but got %s" % repr(o0Response);
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
     return o0Response;
   
   def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bSecure = True):
@@ -105,7 +122,13 @@ class iHTTPClient(cWithCallbacks):
   @ShowDebugOutput
   def fto0GetRequestAndResponseForURL(oSelf,
     oURL,
-    sbzMethod = zNotProvided, sbzVersion = zNotProvided, o0zHeaders = zNotProvided, sb0Body = None, s0Data = None, a0sbBodyChunks = None,
+    *,
+    sbzMethod = zNotProvided,
+    sbzVersion = zNotProvided,
+    o0zHeaders = zNotProvided,
+    sb0Body = None,
+    s0Data = None,
+    a0sbBodyChunks = None,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -138,8 +161,11 @@ class iHTTPClient(cWithCallbacks):
     oRequest = oSelf.foGetRequestForURL(
       oURL, sbzMethod, sbzVersion, o0zHeaders, sb0Body, s0Data, a0sbBodyChunks
     );
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
     o0Response = oSelf.fo0GetResponseForRequestAndURL(
-      oRequest, oURL,
+      oRequest,
+      oURL,
       u0zMaxStatusLineSize = u0zMaxStatusLineSize,
       u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
       u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
@@ -154,13 +180,21 @@ class iHTTPClient(cWithCallbacks):
       return (None, None);
     assert o0Response, \
         "Expected a response but got %s" % repr(o0Response);
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
     return (oRequest, o0Response);
   
   @ShowDebugOutput
   def foGetRequestForURL(oSelf,
-    oURL, 
-    sbzMethod = zNotProvided, sbzVersion = zNotProvided, o0zHeaders = zNotProvided, sb0Body = None, s0Data = None, a0sbBodyChunks = None,
-    o0AdditionalHeaders = None, bAutomaticallyAddContentLengthHeader = False
+    oURL,
+    *,
+    sbzMethod = zNotProvided,
+    sbzVersion = zNotProvided,
+    o0zHeaders = zNotProvided,
+    sb0Body = None, s0Data = None,
+    a0sbBodyChunks = None,
+    o0AdditionalHeaders = None,
+    bAutomaticallyAddContentLengthHeader = False,
   ):
     fAssertTypes({
       oURL: (oURL, cURL),
@@ -200,11 +234,15 @@ class iHTTPClient(cWithCallbacks):
       oRequest.oHeaders.foAddHeaderForNameAndValue(b"Host", oURL.sbHostnameAndOptionalPort);
     if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Accept-Encoding"):
       oRequest.oHeaders.foAddHeaderForNameAndValue(b"Accept-Encoding", b", ".join(oRequest.asbSupportedCompressionTypes));
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
     return oRequest;
   
   @ShowDebugOutput
   def fo0GetResponseForRequestAndURL(oSelf,
-    oRequest, oURL,
+    oRequest,
+    oURL,
+    *,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -217,7 +255,8 @@ class iHTTPClient(cWithCallbacks):
     raise NotImplementedError();
   
   def fasGetDetails(oSelf):
-    raise NotImplementedError();
+    o0CookieStore = oSelf.o0CookieStore;
+    return o0CookieStore.fasGetDetails() if o0CookieStore else [];
   
   def __repr__(oSelf):
     sModuleName = ".".join(oSelf.__class__.__module__.split(".")[:-1]);

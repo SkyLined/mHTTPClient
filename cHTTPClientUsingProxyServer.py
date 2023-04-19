@@ -47,7 +47,10 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
   @ShowDebugOutput
   def __init__(oSelf,
     oProxyServerURL,
-    bVerifyCertificatesForProxy = True, bCheckProxyHostname = True,
+    *,
+    bVerifyCertificatesForProxy = True,
+    bCheckProxyHostname = True,
+    o0CookieStore = None,
     o0zCertificateStore = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
     n0zConnectToProxyTimeoutInSeconds = zNotProvided,
@@ -57,6 +60,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     bVerifyCertificates = True,
     bCheckHostname = True,
   ):
+    super().__init__(
+      o0CookieStore = o0CookieStore,
+    );
     oSelf.oProxyServerURL = oProxyServerURL;
     oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
     oSelf.__bCheckProxyHostname = bCheckProxyHostname;
@@ -207,7 +213,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
   
   @ShowDebugOutput
   def fo0GetResponseForRequestAndURL(oSelf,
-    oRequest, oURL,
+    oRequest,
+    oURL,
+    *,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -234,7 +242,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         return None;
       assert o0Connection, \
           "Expected a connection but got %s" % repr(o0Connection);
-      return o0Connection.foSendRequestAndReceiveResponse(
+      oResponse = o0Connection.foSendRequestAndReceiveResponse(
         oRequest,
         u0zMaxStatusLineSize = u0zMaxStatusLineSize,
         u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
@@ -247,6 +255,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       );
     finally:
       o0Connection.fEndTransaction();
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(oResponse, oURL);
+    return oResponse;
   
   @ShowDebugOutput
   def fo0GetConnectionAndStartTransactionForURL(oSelf, oServerBaseURL, bSecure = True):
@@ -349,7 +360,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       );
       if not aoConnectionsWithStartedTransactions:
         # We timed out before a connection became available.
-       raise cHTTPMaxConnectionsToServerReachedException(
+        raise cHTTPMaxConnectionsToServerReachedException(
           "Maximum number of connections to proxy reached.",
           dxDetails = {
             "bServerIsAProxy": True,
@@ -608,13 +619,16 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     # approximates the real values.
     if oSelf.bTerminated:
       return ["terminated"];
+    o0CookieStore = oSelf.o0CookieStore;
     return [s for s in [
       "server: %s" % str(oSelf.oProxyServerURL),
       "%d connections to proxy server" % len(oSelf.__aoConnectionsToProxyNotConnectedToAServer),
       "%d secure connections to server through proxy" % len(oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort),
       "%d externalized connections to server through proxy" % len(oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort),
       "stopping" if oSelf.__bStopping else None,
-    ] if s];
+    ] if s] + (
+      o0CookieStore.fasGetDetails() if o0CookieStore else []
+    );
 
 for cException in acExceptions:
   setattr(cHTTPClientUsingProxyServer, cException.__name__, cException);

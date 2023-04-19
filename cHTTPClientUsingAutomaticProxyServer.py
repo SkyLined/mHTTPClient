@@ -63,6 +63,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
   
   @ShowDebugOutput
   def __init__(oSelf,
+    *,
+    o0CookieStore = None,
     o0zCertificateStore = zNotProvided, 
     bVerifyCertificatesForProxy = True, bCheckProxyHostname = True,
     u0zMaxNumberOfConnectionsToServerWithoutProxy = zNotProvided,
@@ -72,6 +74,9 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True, bCheckHostname = True,
   ):
+    super().__init__(
+      o0CookieStore = o0CookieStore,
+    );
     oSelf.__hInternet = oWinHTTPDLL.WinHttpOpen(
       LPCWSTR("User-Agent"), # LPCWSTR pszAgentW
       WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, # DWORD dwAccessType
@@ -300,7 +305,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     assert o0HTTPClient is not None, \
         "This is unexpected";
     oHTTPClient = o0HTTPClient;
-    return oHTTPClient.fo0GetResponseForRequestAndURL(
+    o0Response = oHTTPClient.fo0GetResponseForRequestAndURL(
       oRequest, oURL,
       u0zMaxStatusLineSize = u0zMaxStatusLineSize,
       u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
@@ -311,6 +316,14 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
       u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
     );
+    if oSelf.__bStopping:
+      fShowDebugOutput(oSelf, "Stopping.");
+      return None;
+    assert o0Response, \
+        "Expected a response but got %s" % repr(o0Response);
+    o0CookieStore = oSelf.o0CookieStore;
+    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
+    return o0Response;
   
   @ShowDebugOutput
   def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bSecure = True):
@@ -600,6 +613,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     # approximates the real values.
     if oSelf.bTerminated:
       return ["terminated"];
+    o0CookieStore = oSelf.o0CookieStore;
     return [s for s in [
       "with%s direct client" % ("" if oSelf.__oDirectHTTPClient else "out"),
       "%s proxy clients" % (
@@ -608,7 +622,9 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
         else "no"
       ),
       "stopping" if oSelf.__bStopping else None,
-    ] if s];
+    ] if s] + (
+      o0CookieStore.fasGetDetails() if o0CookieStore else []
+    );
 
 for cException in acExceptions:
   setattr(cHTTPClientUsingAutomaticProxyServer, cException.__name__, cException);
