@@ -14,6 +14,8 @@ from mHTTPConnection.mExceptions import \
     cTCPIPConnectTimeoutException;
 from mHTTPProtocol import cURL;
 from mMultiThreading import cThread;
+# We want to check if the code can detect out-of-band data, so enable that feature.
+cHTTPConnection.bAllowOutOfBandData = False;
 
 NORMAL =            0x0F07; # Light gray
 INFO =              0x0F0F; # Bright white
