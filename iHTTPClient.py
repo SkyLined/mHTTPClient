@@ -91,7 +91,13 @@ class iHTTPClient(cWithCallbacks):
       fShowDebugOutput("Stopping.");
       return None;
     oRequest = oSelf.foGetRequestForURL(
-      oURL, sbzMethod, sbzVersion, o0zHeaders, sb0Body, s0Data, a0sbBodyChunks
+      oURL,
+      sbzMethod = sbzMethod,
+      sbzVersion = sbzVersion,
+      o0zHeaders = o0zHeaders,
+      sb0Body = sb0Body,
+      s0Data = s0Data,
+      a0sbBodyChunks = a0sbBodyChunks,
     );
     o0CookieStore = oSelf.o0CookieStore;
     if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
@@ -159,7 +165,13 @@ class iHTTPClient(cWithCallbacks):
       fShowDebugOutput("Stopping.");
       return (None, None);
     oRequest = oSelf.foGetRequestForURL(
-      oURL, sbzMethod, sbzVersion, o0zHeaders, sb0Body, s0Data, a0sbBodyChunks
+      oURL,
+      sbzMethod = sbzMethod,
+      sbzVersion = sbzVersion,
+      o0zHeaders = o0zHeaders,
+      sb0Body = sb0Body,
+      s0Data = s0Data,
+      a0sbBodyChunks = a0sbBodyChunks,
     );
     o0CookieStore = oSelf.o0CookieStore;
     if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
