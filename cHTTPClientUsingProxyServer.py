@@ -287,25 +287,25 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
   
-  @ShowDebugOutput
-  def __fbTerminateAnIdleSecureConnectionToServerThroughProxy(oSelf):
-    oSelf.__oPropertyAccessTransactionLock.fbAcquire();
-    try:
-      # Try to find the secure connection that is idle:
-      for oIdleSecureConnection in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.values():
-        try: # Try to start a transaction; this will only succeed on an idle connection.
-          oIdleSecureConnection.fStartTransaction(0);
-        except cTCPIPConnectionCannotBeUsedConcurrentlyException:
-          pass; # The connection is not idle
-        else:
-          break; # We found an idle connection and have taken ownership by starting a transaction.
-      else:
-        return False;
-    finally:
-      oSelf.__oPropertyAccessTransactionLock.fRelease();
-    # Disconnect the idle connection.
-    oIdleSecureConnection.fDisconnect();
-    return True;
+#  @ShowDebugOutput
+#  def __fbTerminateAnIdleSecureConnectionToServerThroughProxy(oSelf):
+#    oSelf.__oPropertyAccessTransactionLock.fbAcquire();
+#    try:
+#      # Try to find the secure connection that is idle:
+#      for oIdleSecureConnection in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.values():
+#        try: # Try to start a transaction; this will only succeed on an idle connection.
+#          oIdleSecureConnection.fStartTransaction(0);
+#        except cTCPIPConnectionCannotBeUsedConcurrentlyException:
+#          pass; # The connection is not idle
+#        else:
+#          break; # We found an idle connection and have taken ownership by starting a transaction.
+#      else:
+#        return False;
+#    finally:
+#      oSelf.__oPropertyAccessTransactionLock.fRelease();
+#    # Disconnect the idle connection.
+#    oIdleSecureConnection.fDisconnect();
+#    return True;
   
   @ShowDebugOutput
   def __fo0GetUnusedConnectionToProxyAndStartTransaction(oSelf):
