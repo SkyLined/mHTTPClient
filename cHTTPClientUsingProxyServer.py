@@ -91,7 +91,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       if bVerifyCertificatesForProxy:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oProxyServerURL.sbHostname,
-          oSelf.__bCheckProxyHostname,
+          bCheckHostname = oSelf.__bCheckProxyHostname,
         );
       else:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
@@ -583,7 +583,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       if oSelf.__bVerifyCertificates:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oServerBaseURL.sbHostname,
-          oSelf.__bCheckHostname
+          bCheckHostname = oSelf.__bCheckHostname,
         );
       else:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
