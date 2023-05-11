@@ -225,7 +225,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         if oSelf.__bVerifyCertificates:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
             oURL.sbHostname,
-            bCheckHostname = oSelf.__bCheckHostname
+            bCheckHostname = oSelf.__bCheckHostname,
           );
         else:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
