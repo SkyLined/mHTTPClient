@@ -276,3 +276,8 @@ class iHTTPClient(cWithCallbacks):
   
   def __str__(oSelf):
     return "%s#%X{%s}" % (oSelf.__class__.__name__, id(oSelf), ", ".join(oSelf.fasGetDetails()));
+
+from .mExceptions import acExceptions;
+for cException in acExceptions:
+  setattr(iHTTPClient, cException.__name__, cException);
+

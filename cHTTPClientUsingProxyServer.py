@@ -22,7 +22,6 @@ except:
 
 from .iHTTPClient import iHTTPClient;
 from .mExceptions import \
-    acExceptions, \
     cHTTPMaxConnectionsToServerReachedException, \
     cHTTPClientFailedToConnectToServerThroughProxyException, \
     cTCPIPConnectionCannotBeUsedConcurrentlyException;
@@ -615,7 +614,3 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     ] if s] + (
       o0CookieStore.fasGetDetails() if o0CookieStore else []
     );
-
-for cException in acExceptions:
-  setattr(cHTTPClientUsingProxyServer, cException.__name__, cException);
-

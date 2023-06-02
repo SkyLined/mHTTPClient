@@ -25,8 +25,6 @@ from .iHTTPClient import iHTTPClient;
 # bug, where "too long" is defined by the following value:
 gnDeadlockTimeoutInSeconds = 1; # We're not doing anything time consuming, so this should suffice.
 
-from .mExceptions import *;
-
 class cHTTPClient(iHTTPClient, cWithCallbacks):
   u0zDefaultMaxNumberOfConnectionsToServer = 10;
   n0zDefaultConnectTimeoutInSeconds = 10;
@@ -357,7 +355,3 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     ] if s] + (
       o0CookieStore.fasGetDetails() if o0CookieStore else []
     );
-
-for cException in acExceptions:
-  setattr(cHTTPClient, cException.__name__, cException);
-
