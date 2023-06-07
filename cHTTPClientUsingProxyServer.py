@@ -48,6 +48,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oProxyServerURL,
     *,
     bVerifyCertificatesForProxy = True,
+    bVerifyIntermediateCertificatesForProxy = True,
     bCheckProxyHostname = True,
     o0CookieStore = None,
     o0zCertificateStore = zNotProvided,
@@ -57,6 +58,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
+    bVerifyIntermediateCertificates = True,
     bCheckHostname = True,
   ):
     super().__init__(
@@ -64,6 +66,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     );
     oSelf.oProxyServerURL = oProxyServerURL;
     oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
+    oSelf.__bVerifyIntermediateCertificatesForProxy = bVerifyIntermediateCertificatesForProxy;
     oSelf.__bCheckProxyHostname = bCheckProxyHostname;
     
     oSelf.__o0CertificateStore = (
@@ -80,6 +83,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     oSelf.__n0TransactionTimeoutInSeconds = fxGetFirstProvidedValue(n0zTransactionTimeoutInSeconds, oSelf.n0DefaultTransactionTimeoutInSeconds);
     oSelf.__bVerifyCertificates = bVerifyCertificates;
+    oSelf.__bVerifyIntermediateCertificates = bVerifyIntermediateCertificates;
     oSelf.__bCheckHostname = bCheckHostname;
     
     if not oProxyServerURL.bSecure:
@@ -91,6 +95,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oProxyServerURL.sbHostname,
           bCheckHostname = oSelf.__bCheckProxyHostname,
+          bVerifyIntermediateCertificates = bVerifyIntermediateCertificatesForProxy,
         );
       else:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
@@ -569,6 +574,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oServerBaseURL.sbHostname,
           bCheckHostname = oSelf.__bCheckHostname,
+          bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
         );
       else:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();

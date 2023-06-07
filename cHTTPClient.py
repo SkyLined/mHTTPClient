@@ -41,6 +41,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     n0zSecureTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
+    bVerifyIntermediateCertificates = True,
     bCheckHostname = True,
     f0ResolveHostnameCallback = None,
   ):
@@ -58,6 +59,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureTimeoutInSeconds, oSelf.n0zDefaultSecureTimeoutInSeconds);
     oSelf.__n0zTransactionTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zTransactionTimeoutInSeconds, oSelf.n0zDefaultTransactionTimeoutInSeconds);
     oSelf.__bVerifyCertificates = bVerifyCertificates;
+    oSelf.__bVerifyIntermediateCertificates = bVerifyIntermediateCertificates;
     oSelf.__bCheckHostname = bCheckHostname;
     oSelf.__f0ResolveHostnameCallback = f0ResolveHostnameCallback;
     
@@ -224,6 +226,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
             oURL.sbHostname,
             bCheckHostname = oSelf.__bCheckHostname,
+            bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
           );
         else:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();

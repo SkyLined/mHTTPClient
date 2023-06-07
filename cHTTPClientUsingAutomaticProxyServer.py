@@ -66,6 +66,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     o0CookieStore = None,
     o0zCertificateStore = zNotProvided, 
     bVerifyCertificatesForProxy = True,
+    bVerifyIntermediateCertificatesForProxy = True,
     bCheckProxyHostname = True,
     u0zMaxNumberOfConnectionsToServerWithoutProxy = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
@@ -76,6 +77,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
+    bVerifyIntermediateCertificates = True,
     bCheckHostname = True,
   ):
     super().__init__(
@@ -101,6 +103,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       None
     );
     oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
+    oSelf.__bVerifyIntermediateCertificatesForProxy = bVerifyIntermediateCertificatesForProxy;
     oSelf.__bCheckProxyHostname = bCheckProxyHostname;
     #
     oSelf.__u0zMaxNumberOfConnectionsToServerWithoutProxy = fxzGetFirstProvidedValueIfAny(u0zMaxNumberOfConnectionsToServerWithoutProxy, oSelf.u0zDefaultMaxNumberOfConnectionsToServerWithoutProxy);
@@ -117,6 +120,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     #
     oSelf.__bVerifyCertificates = bVerifyCertificates;
+    oSelf.__bVerifyIntermediateCertificates = bVerifyIntermediateCertificates;
     oSelf.__bCheckHostname = bCheckHostname;
     #############################
     oSelf.__oPropertyAccessTransactionLock = cLock(
@@ -252,7 +256,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       from mWindowsSDK import fsGetWin32ErrorCodeDescription;
       uLastError = oKernel32DLL.GetLastError().fuGetValue();
       raise AssertionError("Cannot call WinHttpGetProxyForUrl for URL %s: error 0x%08X (%s)." % (sURL, uLastError, fsGetWin32ErrorCodeDescription(uLastError)));
-     
+    
     if oWinHTTPProxyInfo.dwAccessType == WINHTTP_ACCESS_TYPE_NO_PROXY:
       return None;
     assert oWinHTTPProxyInfo.dwAccessType == WINHTTP_ACCESS_TYPE_NAMED_PROXY, \
@@ -364,6 +368,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
           bVerifyCertificates = oSelf.__bVerifyCertificates,
+          bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
           bCheckHostname = oSelf.__bCheckHostname,
         );
         oClient.fAddCallbacks({
@@ -446,6 +451,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zSecureConnectionToServerTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
           bVerifyCertificates = oSelf.__bVerifyCertificates,
+          bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
           bCheckHostname = oSelf.__bCheckHostname,
         );
         oClient.fAddCallbacks({
