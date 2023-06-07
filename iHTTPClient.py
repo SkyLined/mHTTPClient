@@ -69,28 +69,10 @@ class iHTTPClient(cWithCallbacks):
     u0zMaxChunkSize = zNotProvided,
     u0zMaxNumberOfChunks = zNotProvided,
     u0MaxNumberOfChunksBeforeDisconnecting = None, # disconnect and return response once this many chunks are received.
+    uMaximumNumberOfRedirectsToFollow = 0,
+    bChangeMethodToGetAfterRedirect = True, # When the spec doesn't specify, you can choose what you want to happen.
   ):
-    fAssertTypes({
-      oURL: (oURL, cURL),
-      sbzMethod: (sbzMethod, bytes, zNotProvided),
-      sbzVersion: (sbzVersion, bytes, zNotProvided),
-      o0zHeaders: (o0zHeaders, cHTTPHeaders, None, zNotProvided),
-      sb0Body: (sb0Body, bytes, None),
-      s0Data: (s0Data, str, None),
-      a0sbBodyChunks: (s0Data, [bytes], None),
-      u0zMaxStatusLineSize: (u0zMaxStatusLineSize, int, None, zNotProvided),
-      u0zMaxHeaderNameSize: (u0zMaxHeaderNameSize, int, None, zNotProvided),
-      u0zMaxHeaderValueSize: (u0zMaxHeaderValueSize, int, None, zNotProvided),
-      u0zMaxNumberOfHeaders: (u0zMaxNumberOfHeaders, int, None, zNotProvided),
-      u0zMaxBodySize: (u0zMaxBodySize, int, None, zNotProvided),
-      u0zMaxChunkSize: (u0zMaxChunkSize, int, None, zNotProvided),
-      u0zMaxNumberOfChunks: (u0zMaxNumberOfChunks, int, None, zNotProvided),
-      u0MaxNumberOfChunksBeforeDisconnecting: (u0MaxNumberOfChunksBeforeDisconnecting, int, None),
-    });
-    if oSelf.bStopping:
-      fShowDebugOutput("Stopping.");
-      return None;
-    oRequest = oSelf.foGetRequestForURL(
+    (o0OriginalRequest, o0Response) = oSelf.fto0GetRequestAndResponseForURL(
       oURL,
       sbzMethod = sbzMethod,
       sbzVersion = sbzVersion,
@@ -98,12 +80,6 @@ class iHTTPClient(cWithCallbacks):
       sb0Body = sb0Body,
       s0Data = s0Data,
       a0sbBodyChunks = a0sbBodyChunks,
-    );
-    o0CookieStore = oSelf.o0CookieStore;
-    if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
-    o0Response = oSelf.fo0GetResponseForRequestAndURL(
-      oRequest,
-      oURL,
       u0zMaxStatusLineSize = u0zMaxStatusLineSize,
       u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
       u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
@@ -112,14 +88,9 @@ class iHTTPClient(cWithCallbacks):
       u0zMaxChunkSize = u0zMaxChunkSize,
       u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
       u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
+      uMaximumNumberOfRedirectsToFollow = uMaximumNumberOfRedirectsToFollow,
+      bChangeMethodToGetAfterRedirect = bChangeMethodToGetAfterRedirect,
     );
-    if oSelf.bStopping:
-      fShowDebugOutput("Stopping.");
-      return None;
-    assert o0Response, \
-        "Expected a response but got %s" % repr(o0Response);
-    o0CookieStore = oSelf.o0CookieStore;
-    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
     return o0Response;
   
   def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bSecure = True):
@@ -143,58 +114,109 @@ class iHTTPClient(cWithCallbacks):
     u0zMaxChunkSize = zNotProvided,
     u0zMaxNumberOfChunks = zNotProvided,
     u0MaxNumberOfChunksBeforeDisconnecting = None, # disconnect and return response once this many chunks are received.
+    uMaximumNumberOfRedirectsToFollow = 0,
+    bChangeMethodToGetAfterRedirect = True, # When the spec doesn't specify, you can choose what you want to happen.
   ):
     fAssertTypes({
-      oURL: (oURL, cURL),
-      sbzMethod: (sbzMethod, bytes, zNotProvided),
-      sbzVersion: (sbzVersion, bytes, zNotProvided),
-      o0zHeaders: (o0zHeaders, cHTTPHeaders, None, zNotProvided),
-      sb0Body: (sb0Body, bytes, None),
-      s0Data: (s0Data, str, None),
-      a0sbBodyChunks: (s0Data, [bytes], None),
-      u0zMaxStatusLineSize: (u0zMaxStatusLineSize, int, None, zNotProvided),
-      u0zMaxHeaderNameSize: (u0zMaxHeaderNameSize, int, None, zNotProvided),
-      u0zMaxHeaderValueSize: (u0zMaxHeaderValueSize, int, None, zNotProvided),
-      u0zMaxNumberOfHeaders: (u0zMaxNumberOfHeaders, int, None, zNotProvided),
-      u0zMaxBodySize: (u0zMaxBodySize, int, None, zNotProvided),
-      u0zMaxChunkSize: (u0zMaxChunkSize, int, None, zNotProvided),
-      u0zMaxNumberOfChunks: (u0zMaxNumberOfChunks, int, None, zNotProvided),
-      u0MaxNumberOfChunksBeforeDisconnecting: (u0MaxNumberOfChunksBeforeDisconnecting, int, None),
+      "oURL": (oURL, cURL),
+      "sbzMethod": (sbzMethod, bytes, zNotProvided),
+      "sbzVersion": (sbzVersion, bytes, zNotProvided),
+      "o0zHeaders": (o0zHeaders, cHTTPHeaders, None, zNotProvided),
+      "sb0Body": (sb0Body, bytes, None),
+      "s0Data": (s0Data, str, None),
+      "a0sbBodyChunks": (s0Data, [bytes], None),
+      "u0zMaxStatusLineSize": (u0zMaxStatusLineSize, int, None, zNotProvided),
+      "u0zMaxHeaderNameSize": (u0zMaxHeaderNameSize, int, None, zNotProvided),
+      "u0zMaxHeaderValueSize": (u0zMaxHeaderValueSize, int, None, zNotProvided),
+      "u0zMaxNumberOfHeaders": (u0zMaxNumberOfHeaders, int, None, zNotProvided),
+      "u0zMaxBodySize": (u0zMaxBodySize, int, None, zNotProvided),
+      "u0zMaxChunkSize": (u0zMaxChunkSize, int, None, zNotProvided),
+      "u0zMaxNumberOfChunks": (u0zMaxNumberOfChunks, int, None, zNotProvided),
+      "u0MaxNumberOfChunksBeforeDisconnecting": (u0MaxNumberOfChunksBeforeDisconnecting, int, None),
+      "uMaximumNumberOfRedirectsToFollow": (uMaximumNumberOfRedirectsToFollow, int),
+      "bChangeMethodToGetAfterRedirect": (bChangeMethodToGetAfterRedirect, bool),
     });
-    if oSelf.bStopping:
-      fShowDebugOutput("Stopping.");
-      return (None, None);
-    oRequest = oSelf.foGetRequestForURL(
-      oURL,
-      sbzMethod = sbzMethod,
-      sbzVersion = sbzVersion,
-      o0zHeaders = o0zHeaders,
-      sb0Body = sb0Body,
-      s0Data = s0Data,
-      a0sbBodyChunks = a0sbBodyChunks,
+    o0OriginalRequest = None;
+    auStatusCodesThatChangeMethodToGetAfterRedirect = (
+      [301, 302, 303] if bChangeMethodToGetAfterRedirect else
+      [303]
     );
-    o0CookieStore = oSelf.o0CookieStore;
-    if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
-    o0Response = oSelf.fo0GetResponseForRequestAndURL(
-      oRequest,
-      oURL,
-      u0zMaxStatusLineSize = u0zMaxStatusLineSize,
-      u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
-      u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
-      u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
-      u0zMaxBodySize = u0zMaxBodySize,
-      u0zMaxChunkSize = u0zMaxChunkSize,
-      u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
-      u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
-    );
-    if oSelf.bStopping:
-      fShowDebugOutput("Stopping.");
-      return (None, None);
-    assert o0Response, \
-        "Expected a response but got %s" % repr(o0Response);
-    o0CookieStore = oSelf.o0CookieStore;
-    if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
-    return (oRequest, o0Response);
+    while True:
+      if oSelf.bStopping:
+        fShowDebugOutput("Stopping.");
+        return (o0OriginalRequest, None);
+      oRequest = oSelf.foGetRequestForURL(
+        oURL,
+        sbzMethod = sbzMethod,
+        sbzVersion = sbzVersion,
+        o0zHeaders = o0zHeaders,
+        sb0Body = sb0Body,
+        s0Data = s0Data,
+        a0sbBodyChunks = a0sbBodyChunks,
+      );
+      if o0OriginalRequest is None:
+        o0OriginalRequest = oRequest;
+      o0CookieStore = oSelf.o0CookieStore;
+      if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
+      o0Response = oSelf.fo0GetResponseForRequestAndURL(
+        oRequest,
+        oURL,
+        u0zMaxStatusLineSize = u0zMaxStatusLineSize,
+        u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
+        u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
+        u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
+        u0zMaxBodySize = u0zMaxBodySize,
+        u0zMaxChunkSize = u0zMaxChunkSize,
+        u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
+        u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting,
+      );
+      if oSelf.bStopping:
+        fShowDebugOutput("Stopping.");
+        return (o0OriginalRequest, None);
+      assert o0Response, \
+          "Expected a response but got %s" % repr(o0Response);
+      oResponse = o0Response;
+      o0CookieStore = oSelf.o0CookieStore;
+      if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
+      # If we do not follow (any more) redirects, we are done.
+      if uMaximumNumberOfRedirectsToFollow == 0:
+        break;
+      # If it's not a redirect, we are done.
+      if 300 > oResponse.uStatusCode or oResponse.uStatusCode > 399:
+        break;
+      # If the redirect has no `Location` header, we are done.
+      o0LocationHeader = o0Response.oHeaders.fo0GetUniqueHeaderForName(b"Location");
+      if o0LocationHeader is None:
+        break;
+      # If the redirect is relative, figure out the absolute URL to redirect to.
+      # If the redirect is absolute, make sure it start with `http://` or `https://`.
+      # If it does not, we are done. If the provided URL is invalid, we are done too.
+      sbRedirectToURL = o0LocationHeader.sbValue;
+      asbRedirectToURL = sbRedirectToURL.split(b"://", 1);
+      try:
+        if len(asbRedirectToURL) == 1: # one element for relative URLs
+          oURL = oURL.foFromRelativeBytesString(sbRedirectToURL);
+        elif asbRedirectToURL[0] in [b"http", b"https"]: # two elements, first is protocol name for absolute URLs.
+          oURL = cURL.foFromBytesString(sbRedirectToURL);
+        else:
+          break;
+      except cURL.cHTTPInvalidURLException:
+        break;
+      uMaximumNumberOfRedirectsToFollow -= 1;
+      # 303 always changes the method for the next request to GET. This behavior is undefined
+      # for 301 and 302 in the specification, so the user gets to pick what they want to happen
+      # using the bChangeMethodToGetAfterRedirect argument.
+      # See https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+      if (
+        sbzMethod != b"GET" and
+        oResponse.uStatusCode in auStatusCodesThatChangeMethodToGetAfterRedirect
+      ):
+        sbzMethod = b"GET";
+        sb0Body = None;
+        s0Data = None;
+        a0sbBodyChunks = None;
+      # Make another request to follow the redirect.
+    return (o0OriginalRequest, o0Response);
   
   @ShowDebugOutput
   def foGetRequestForURL(oSelf,

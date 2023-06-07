@@ -29,8 +29,9 @@ def foGetServerURL(sNote):
   uServerPortNumber += 1;
   return cURL.foFromBytesString(b"http://localhost:%d/%s" % (uServerPortNumber, sNote));
 
-oTestURL = cURL.foFromBytesString(b"http://example.com");
-oSecureTestURL = cURL.foFromBytesString(b"https://example.com");
+oTestURL = cURL.foFromBytesString(b"http://example.com/");
+oSecureTestURL = cURL.foFromBytesString(b"https://example.com/");
+oSecureRedirectURL = cURL.foFromBytesString(b"http://skylined.nl/");
 oUnknownHostnameURL = cURL.foFromBytesString(b"http://does.not.exist.example.com/unknown-hostname");
 oInvalidAddressURL = cURL.foFromBytesString(b"http://0.0.0.0/invalid-address");
 oConnectionRefusedURL = foGetServerURL(b"refuse-connection");
@@ -48,20 +49,27 @@ def fTestClient(
 ):
   oServersShouldBeRunningLock = threading.Lock();
   oServersShouldBeRunningLock.acquire(); # Released once servers should stop runnning.
+  ############################################
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a first test request to %s " % oTestURL, sPadding = "\u2500");
   (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oTestURL);
   assert o0Response, \
       "No response!?";
   oResponse = o0Response;
+  assert oResponse.uStatusCode == 200, \
+      "Response code == %d instead of 200!?" % oResponse.uStatusCode;
   oConsole.fOutput("  oRequest = %s" % oRequest.fsbSerialize());
   oConsole.fOutput("  oResponse = %s" % oResponse.fsbSerialize());
+  ############################################
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a second test request to %s " % oTestURL, sPadding = "\u2500");
   (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oTestURL);
   assert o0Response, \
       "No response!?";
   oResponse = o0Response;
+  assert oResponse.uStatusCode == 200, \
+      "Response code == %d instead of 200!?" % oResponse.uStatusCode;
   oConsole.fOutput("  oRequest = %s" % oRequest);
   oConsole.fOutput("  oResponse = %s" % oResponse);
+  ############################################
   if oHTTPClient.__class__.__name__ == "cHTTPClient": 
     # cHTTPClient specific checks
     asbConnectionPoolsProtocolHostPort = set(oHTTPClient._cHTTPClient__doConnectionsToServerPool_by_sbProtocolHostPort.keys());
@@ -84,7 +92,7 @@ def fTestClient(
     asSecureConnectionTargets = list(doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.keys());
     assert len(asSecureConnectionTargets) == 0, \
         "Expected no secure connections, but found %s" % repr(asSecureConnectionTargets);
-  
+
   # Wrapping SSL secured sockets in SSL is not currently supported, so the
   # client cannot secure a connection to a server over a secure connection to a
   # proxy.
@@ -139,6 +147,27 @@ def fTestClient(
         for (sbProtocolHostPort, oSecureConnection) in doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.items():
           print("* %S => %s" % (sbProtocolHostPort, repr(oSecureConnection)));
         raise AssertionError();
+  
+  ### CHECK IF FOLLOWING REDIRECTS WORKS #########################################
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a test request to %s " % oSecureRedirectURL, sPadding = "\u2500");
+  (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oSecureRedirectURL);
+  assert o0Response, \
+      "No response!?";
+  oResponse = o0Response;
+  assert 300 <= oResponse.uStatusCode <= 399, \
+      "Response code == %d instead of 3xx!?" % oResponse.uStatusCode;
+  oConsole.fOutput("  oRequest = %s" % oRequest);
+  oConsole.fOutput("  oResponse = %s" % oResponse);
+  ############################################
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a test request to %s and follow a redirect " % oSecureRedirectURL, sPadding = "\u2500");
+  (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oSecureRedirectURL, uMaximumNumberOfRedirectsToFollow = 5);
+  assert o0Response, \
+      "No response!?";
+  oResponse = o0Response;
+  assert oResponse.uStatusCode == 200, \
+      "Response code == %d instead of 200!?" % oResponse.uStatusCode;
+  oConsole.fOutput("  oRequest = %s" % oRequest);
+  oConsole.fOutput("  oResponse = %s" % oResponse);
   
   # Create a server on a socket but do not listen so connections are refused.
   oConnectionRefusedServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
