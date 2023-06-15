@@ -228,7 +228,6 @@ class iHTTPClient(cWithCallbacks):
     sb0Body = None, s0Data = None,
     a0sbBodyChunks = None,
     o0AdditionalHeaders = None,
-    bAutomaticallyAddContentLengthHeader = False,
   ):
     fAssertTypes({
       oURL: (oURL, cURL),
@@ -239,7 +238,6 @@ class iHTTPClient(cWithCallbacks):
       s0Data: (s0Data, str, None),
       a0sbBodyChunks: (s0Data, [bytes], None),
       o0AdditionalHeaders: (o0AdditionalHeaders, cHTTPHeaders, None),
-      bAutomaticallyAddContentLengthHeader: (bAutomaticallyAddContentLengthHeader, bool),
     });
     o0ProxyServerURL = oSelf.fo0GetProxyServerURLForURL(oURL);
     if oSelf.bStopping:
@@ -262,7 +260,6 @@ class iHTTPClient(cWithCallbacks):
       s0Data = s0Data,
       a0sbBodyChunks = a0sbBodyChunks,
       o0AdditionalHeaders = o0AdditionalHeaders,
-      bAutomaticallyAddContentLengthHeader = bAutomaticallyAddContentLengthHeader
     );
     if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Host"):
       oRequest.oHeaders.foAddHeaderForNameAndValue(b"Host", oURL.sbHostnameAndOptionalPort);
