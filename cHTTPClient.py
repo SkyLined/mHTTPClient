@@ -41,8 +41,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     n0zSecureTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
-    bVerifyIntermediateCertificates = True,
-    bCheckHostname = True,
+    bzCheckHostname = zNotProvided,
     f0ResolveHostnameCallback = None,
   ):
     super().__init__(
@@ -59,8 +58,12 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureTimeoutInSeconds, oSelf.n0zDefaultSecureTimeoutInSeconds);
     oSelf.__n0zTransactionTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zTransactionTimeoutInSeconds, oSelf.n0zDefaultTransactionTimeoutInSeconds);
     oSelf.__bVerifyCertificates = bVerifyCertificates;
-    oSelf.__bVerifyIntermediateCertificates = bVerifyIntermediateCertificates;
-    oSelf.__bCheckHostname = bCheckHostname;
+    if bVerifyCertificates:
+      oSelf.__bzCheckHostname = bzCheckHostname;
+    else:
+      assert not fbIsProvided(bzCheckHostname) or not bzCheckHostnamem, \
+          "Cannot check hostname if certificates are not verified";
+      oSelf.__bzCheckHostname = False;
     oSelf.__f0ResolveHostnameCallback = f0ResolveHostnameCallback;
     
     oSelf.__oPropertyAccessTransactionLock = cLock(
@@ -196,7 +199,10 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     return o0Response;
   
   @ShowDebugOutput
-  def fo0GetConnectionAndStartTransactionForURL(oSelf, oURL, bDoNotUseSLL = False):
+  def fo0GetConnectionAndStartTransactionForURL(oSelf,
+    oURL,
+    bSecureConnection = True,
+  ):
     if oSelf.__bStopping:
       fShowDebugOutput(oSelf, "Stopping.");
       return None;
@@ -206,7 +212,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       return None;
     return oConnectionsToServerPool.fo0GetConnectionAndStartTransaction(
       n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
-      bDoNotUseSLL = bDoNotUseSLL,
+      bSecureConnection = bSecureConnection,
       n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,
       n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
     );
@@ -225,8 +231,6 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         if oSelf.__bVerifyCertificates:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
             oURL.sbHostname,
-            bCheckHostname = oSelf.__bCheckHostname,
-            bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
           );
         else:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
@@ -238,6 +242,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         oServerBaseURL = oURL.oBase,
         u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServer,
         o0SSLContext = o0SSLContext,
+        bzCheckHostname = oSelf.__bzCheckHostname,
       );
       oConnectionsToServerPool.fAddCallbacks({
         "server hostname or ip address invalid": lambda oConnectionsToServerPool, sbHostnameOrIPAddress: oSelf.fFireCallbacks(

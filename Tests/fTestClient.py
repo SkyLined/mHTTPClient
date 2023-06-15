@@ -17,11 +17,11 @@ from mMultiThreading import cThread;
 # We want to check if the code can detect out-of-band data, so enable that feature.
 cHTTPConnection.bAllowOutOfBandData = False;
 
-NORMAL =            0x0F07; # Light gray
-INFO =              0x0F0F; # Bright white
-OK =                0x0F0A; # Bright green
-ERROR =             0x0F0C; # Bright red
-WARNING =           0x0F0E; # Yellow
+COLOR_NORMAL =            0x0F07; # Light gray
+COLOR_INFO =              0x0F0F; # Bright white
+COLOR_OK =                0x0F0A; # Bright green
+COLOR_ERROR =             0x0F0C; # Bright red
+COLOR_WARNING =           0x0F0E; # Yellow
 
 uServerPortNumber = 28080;
 def foGetServerURL(sNote):
@@ -97,9 +97,13 @@ def fTestClient(
   # client cannot secure a connection to a server over a secure connection to a
   # proxy.
   oProxyServerURLForSecureTestURL = oHTTPClient.fo0GetProxyServerURLForURL(oSecureTestURL);
+  bUsingSecureProxy = oProxyServerURLForSecureTestURL and oProxyServerURLForSecureTestURL.bSecure;
   # If we are not using a proxy, or the URL for the proxy server is not secure,
   # we can test a secure connection to the server.
-  if not oProxyServerURLForSecureTestURL or not oProxyServerURLForSecureTestURL.bSecure: 
+  if bUsingSecureProxy:
+    # Maybe fix with https://stackoverflow.com/questions/4393086/https-proxy-tunneling-with-the-ssl-module ?
+    oConsole.fOutput(COLOR_WARNING, "*** Cannot test a secure URL with a secure proxy!");
+  else:
     oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a first test request to %s " % oSecureTestURL, sPadding = "\u2500");
     (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oSecureTestURL);
     assert o0Response, \
@@ -159,15 +163,19 @@ def fTestClient(
   oConsole.fOutput("  oRequest = %s" % oRequest);
   oConsole.fOutput("  oResponse = %s" % oResponse);
   ############################################
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a test request to %s and follow a redirect " % oSecureRedirectURL, sPadding = "\u2500");
-  (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oSecureRedirectURL, uMaximumNumberOfRedirectsToFollow = 5);
-  assert o0Response, \
-      "No response!?";
-  oResponse = o0Response;
-  assert oResponse.uStatusCode == 200, \
-      "Response code == %d instead of 200!?" % oResponse.uStatusCode;
-  oConsole.fOutput("  oRequest = %s" % oRequest);
-  oConsole.fOutput("  oResponse = %s" % oResponse);
+  if bUsingSecureProxy:
+    # Maybe fix with https://stackoverflow.com/questions/4393086/https-proxy-tunneling-with-the-ssl-module ?
+    oConsole.fOutput(COLOR_WARNING, "*** Cannot test a redirect to a secure URL with a secure proxy!");
+  else:
+    oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a test request to %s and follow a redirect " % oSecureRedirectURL, sPadding = "\u2500");
+    (oRequest, o0Response) = oHTTPClient.fto0GetRequestAndResponseForURL(oSecureRedirectURL, uMaximumNumberOfRedirectsToFollow = 5);
+    assert o0Response, \
+        "No response!?";
+    oResponse = o0Response;
+    assert oResponse.uStatusCode == 200, \
+        "Response code == %d instead of 200!?" % oResponse.uStatusCode;
+    oConsole.fOutput("  oRequest = %s" % oRequest);
+    oConsole.fOutput("  oResponse = %s" % oResponse);
   
   # Create a server on a socket but do not listen so connections are refused.
   oConnectionRefusedServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
@@ -318,12 +326,12 @@ def fTestClient(
           oConsole.fOutput("  oResponse = %s" % oResponse);
         except Exception as oException:
           if oException.__class__ is cExpectedExceptionClass:
-            oConsole.fOutput(OK, "  + Threw %s." % repr(oException));
+            oConsole.fOutput("  + Threw %s." % repr(oException));
           elif oException.__class__ in acAcceptableExceptionClasses:
-            oConsole.fOutput(WARNING, "  ~ Threw %s." % repr(oException));
+            oConsole.fOutput(COLOR_WARNING, "  ~ Threw %s." % repr(oException));
             oConsole.fOutput("    Expected %s." % cExpectedExceptionClass.__name__);
           else:
-            oConsole.fOutput(ERROR, "  - Threw %s." % repr(oException));
+            oConsole.fOutput(COLOR_ERROR, "  - Threw %s." % repr(oException));
             if cExpectedExceptionClass:
               oConsole.fOutput("    Expected %s." % cExpectedExceptionClass.__name__);
             else:
@@ -331,7 +339,7 @@ def fTestClient(
             raise;
         else:
           if cExpectedExceptionClass:
-            oConsole.fOutput(ERROR, "  - Expected %s." % cExpectedExceptionClass.__name__);
+            oConsole.fOutput(COLOR_ERROR, "  - Expected %s." % cExpectedExceptionClass.__name__);
             raise AssertionError("No exception");
   
   # Allow server threads to stop.

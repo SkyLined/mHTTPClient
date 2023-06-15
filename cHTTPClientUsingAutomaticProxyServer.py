@@ -66,8 +66,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     o0CookieStore = None,
     o0zCertificateStore = zNotProvided, 
     bVerifyCertificatesForProxy = True,
-    bVerifyIntermediateCertificatesForProxy = True,
-    bCheckProxyHostname = True,
+    bzCheckProxyHostname = zNotProvided,
     u0zMaxNumberOfConnectionsToServerWithoutProxy = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
     n0zConnectTimeoutInSeconds = zNotProvided,
@@ -77,8 +76,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
-    bVerifyIntermediateCertificates = True,
-    bCheckHostname = True,
+    bzCheckHostname = zNotProvided,
   ):
     super().__init__(
       o0CookieStore = o0CookieStore,
@@ -103,8 +101,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       None
     );
     oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
-    oSelf.__bVerifyIntermediateCertificatesForProxy = bVerifyIntermediateCertificatesForProxy;
-    oSelf.__bCheckProxyHostname = bCheckProxyHostname;
+    oSelf.__bzCheckProxyHostname = bzCheckProxyHostname;
     #
     oSelf.__u0zMaxNumberOfConnectionsToServerWithoutProxy = fxzGetFirstProvidedValueIfAny(u0zMaxNumberOfConnectionsToServerWithoutProxy, oSelf.u0zDefaultMaxNumberOfConnectionsToServerWithoutProxy);
     #
@@ -120,8 +117,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     #
     oSelf.__bVerifyCertificates = bVerifyCertificates;
-    oSelf.__bVerifyIntermediateCertificates = bVerifyIntermediateCertificates;
-    oSelf.__bCheckHostname = bCheckHostname;
+    oSelf.__bzCheckHostname = bzCheckHostname;
     #############################
     oSelf.__oPropertyAccessTransactionLock = cLock(
       "%s.__oPropertyAccessTransactionLock" % oSelf.__class__.__name__,
@@ -368,8 +364,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
           bVerifyCertificates = oSelf.__bVerifyCertificates,
-          bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
-          bCheckHostname = oSelf.__bCheckHostname,
+          bzCheckHostname = oSelf.__bzCheckHostname,
         );
         oClient.fAddCallbacks({
           "server hostname or ip address invalid": lambda oClient, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
@@ -442,8 +437,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
         oClient = oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL] = cHTTPClientUsingProxyServer(
           o0ProxyServerURL,
           bVerifyCertificatesForProxy = oSelf.__bVerifyCertificatesForProxy,
-          bVerifyIntermediateCertificatesForProxy = oSelf.__bVerifyIntermediateCertificatesForProxy,
-          bCheckProxyHostname = oSelf.__bCheckProxyHostname,
+          bzCheckProxyHostname = oSelf.__bzCheckProxyHostname,
           o0zCertificateStore = oSelf.__o0CertificateStore,
           u0zMaxNumberOfConnectionsToProxy = oSelf.__u0zMaxNumberOfConnectionsToProxy,
           n0zConnectToProxyTimeoutInSeconds = oSelf.__n0zConnectToProxyTimeoutInSeconds,
@@ -451,8 +445,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zSecureConnectionToServerTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
           bVerifyCertificates = oSelf.__bVerifyCertificates,
-          bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
-          bCheckHostname = oSelf.__bCheckHostname,
+          bzCheckHostname = oSelf.__bzCheckHostname,
         );
         oClient.fAddCallbacks({
           "proxy hostname or ip address invalid": lambda oClient, sbHostnameOrIPAddress: oSelf.fFireCallbacks(

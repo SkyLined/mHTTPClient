@@ -48,8 +48,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oProxyServerURL,
     *,
     bVerifyCertificatesForProxy = True,
-    bVerifyIntermediateCertificatesForProxy = True,
-    bCheckProxyHostname = True,
+    bzCheckProxyHostname = zNotProvided,
     o0CookieStore = None,
     o0zCertificateStore = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
@@ -58,16 +57,14 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
-    bVerifyIntermediateCertificates = True,
-    bCheckHostname = True,
+    bzCheckHostname = zNotProvided,
   ):
     super().__init__(
       o0CookieStore = o0CookieStore,
     );
     oSelf.oProxyServerURL = oProxyServerURL;
     oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
-    oSelf.__bVerifyIntermediateCertificatesForProxy = bVerifyIntermediateCertificatesForProxy;
-    oSelf.__bCheckProxyHostname = bCheckProxyHostname;
+    oSelf.__bzCheckProxyHostname = bzCheckProxyHostname;
     
     oSelf.__o0CertificateStore = (
       o0zCertificateStore if fbIsProvided(o0zCertificateStore) else
@@ -83,8 +80,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     oSelf.__n0TransactionTimeoutInSeconds = fxGetFirstProvidedValue(n0zTransactionTimeoutInSeconds, oSelf.n0DefaultTransactionTimeoutInSeconds);
     oSelf.__bVerifyCertificates = bVerifyCertificates;
-    oSelf.__bVerifyIntermediateCertificates = bVerifyIntermediateCertificates;
-    oSelf.__bCheckHostname = bCheckHostname;
+    oSelf.__bzCheckHostname = bzCheckHostname;
     
     if not oProxyServerURL.bSecure:
       oSelf.__o0ProxySSLContext = None;
@@ -94,8 +90,6 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       if bVerifyCertificatesForProxy:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oProxyServerURL.sbHostname,
-          bCheckHostname = oSelf.__bCheckProxyHostname,
-          bVerifyIntermediateCertificates = bVerifyIntermediateCertificatesForProxy,
         );
       else:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
@@ -335,14 +329,10 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         },
       );
     try:
-      # Wait until transactions can be started on one or more of the existing connections:
+      # See if a transaction can be started on one or more of the existing connections:
       aoConnectionsWithStartedTransactions = cHTTPConnection.faoWaitUntilTransactionsCanBeStartedAndStartTransactions(
         aoConnections = oSelf.__faoGetAllNonExternalConnections(),
-        n0zTimeoutInSeconds = (
-          zNotProvided if fbIsProvided(n0zConnectEndTime) else
-          None if n0zConnectEndTime is None else 
-          n0zConnectEndTime - time.time()
-        ),
+        n0WaitTimeoutInSeconds = 0,
       );
       if not aoConnectionsWithStartedTransactions:
         # We timed out before a connection became available.
@@ -401,6 +391,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         uPortNumber = oSelf.oProxyServerURL.uPortNumber,
         n0zConnectTimeoutInSeconds = n0zConnectTimeoutInSeconds,
         o0SSLContext = oSelf.__o0ProxySSLContext,
+        bzCheckHostname = oSelf.__bzCheckProxyHostname,
         n0zSecureTimeoutInSeconds = oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds,
         f0HostnameOrIPAddressInvalidCallback = lambda sbHostnameOrIPAddress: oSelf.fFireCallbacks(
           "proxy hostname or ip address invalid",
@@ -564,7 +555,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       );
     oConnectionToServerThroughProxy = oConnectionToProxy
     # We've used some time to setup the connection; reset the transaction timeout
-    oConnectionToServerThroughProxy.fRestartTransaction(oSelf.__n0TransactionTimeoutInSeconds);
+    oConnectionToServerThroughProxy.fRestartTransaction(
+      n0TimeoutInSeconds = oSelf.__n0TransactionTimeoutInSeconds,
+    );
     if bSecure:
       fShowDebugOutput("Starting SSL negotiation...");
       # Wrap the connection in SSL.
@@ -573,14 +566,14 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       if oSelf.__bVerifyCertificates:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oServerBaseURL.sbHostname,
-          bCheckHostname = oSelf.__bCheckHostname,
-          bVerifyIntermediateCertificates = oSelf.__bVerifyIntermediateCertificates,
+          bzCheckHostname = oSelf.__bzCheckHostname,
         );
       else:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
       oConnectionToServerThroughProxy.fSecure(
         oSSLContext = oSSLContext,
         n0zTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
+        bzCheckHostname = False, # We are connecting to the proxy, not the server.
       );
     # Remember that we now have this secure connection to the server
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.remove(oConnectionToServerThroughProxy);
@@ -601,8 +594,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oServerURL = oServerBaseURL,
     ));
     # and start using it...
-    assert oConnectionToServerThroughProxy.fRestartTransaction(oSelf.__n0TransactionTimeoutInSeconds), \
-        "Cannot start a connection on a newly created connection?";
+    oConnectionToServerThroughProxy.fRestartTransaction(
+      n0TimeoutInSeconds = oSelf.__n0TransactionTimeoutInSeconds
+    );
     return oConnectionToServerThroughProxy;
   
   def fasGetDetails(oSelf):
