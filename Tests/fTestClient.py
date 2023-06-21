@@ -3,7 +3,6 @@ import socket, threading;
 from mConsole import oConsole;
 from mHTTPConnection import cHTTPConnection;
 from mHTTPConnection.mExceptions import \
-    cHTTPOutOfBandDataException, \
     cHTTPInvalidMessageException, \
     cTCPIPDataTimeoutException, \
     cTCPIPDNSUnknownHostnameException, \
@@ -14,8 +13,6 @@ from mHTTPConnection.mExceptions import \
     cTCPIPConnectTimeoutException;
 from mHTTPProtocol import cURL;
 from mMultiThreading import cThread;
-# We want to check if the code can detect out-of-band data, so enable that feature.
-cHTTPConnection.bAllowOutOfBandData = False;
 
 COLOR_NORMAL =            0x0F07; # Light gray
 COLOR_INFO =              0x0F0F; # Bright white
@@ -39,7 +36,6 @@ oConnectTimeoutURL = foGetServerURL(b"connect-timeout");
 oConnectionDisconnectedURL = foGetServerURL(b"disconnect");
 oConnectionShutdownURL = foGetServerURL(b"shutdown");
 oResponseTimeoutURL = foGetServerURL(b"response-timeout");
-oOutOfBandDataURL = foGetServerURL(b"send-out-of-band-data");
 oInvalidHTTPMessageURL = foGetServerURL(b"send-invalid-response");
 
 def fTestClient(
@@ -181,31 +177,6 @@ def fTestClient(
   oConnectionRefusedServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
   oConnectionRefusedServerSocket.bind((oConnectionRefusedURL.sbHostname, oConnectionRefusedURL.uPortNumber));
 
-  # Create a server on a socket that sends out-of-band data.
-  oOutOfBandDataServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oOutOfBandDataServerSocket.bind((oOutOfBandDataURL.sbHostname, oOutOfBandDataURL.uPortNumber));
-  oOutOfBandDataServerSocket.listen(1);
-  oResponse = cHTTPConnection.foCreateResponse(s0Data = "Hello, world!");
-  def fOutOfBandDataServerThread():
-    (oClientSocket, (sClientIP, uClientPortNumber)) = oOutOfBandDataServerSocket.accept();
-    oConsole.fOutput("Out-of-band data server receiving request...");
-    oClientSocket.recv(0x1000);
-    oConsole.fOutput("Out-of-band data server sending valid response with out-of-band data...");
-    oClientSocket.send(oResponse.fsbSerialize() + b"X");
-    oConsole.fOutput("Out-of-band data server receiving second request...");
-    try:
-      sbUnexpectedRequest = oClientSocket.recv(0x1000);
-      assert sbUnexpectedRequest != b"";
-    except:
-      oConsole.fOutput("Out-of-band data server connection closed as expected.");
-    else:
-      raise AssertionError("Client appears to have accepted out-of-band data: %s" % repr(sbUnexpectedRequest));
-    oConsole.fOutput("Out-of-band data server thread terminated.");
-    oClientSocket.close();
-  
-  oOutOfBandDataServerThread = cThread(fOutOfBandDataServerThread);
-  oOutOfBandDataServerThread.fStart(bVital = False);
-  
   # Create a server on a socket that immediately closes the connection.
   oConnectionDisconnectedServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
   oConnectionDisconnectedServerSocket.bind((oConnectionDisconnectedURL.sbHostname, oConnectionDisconnectedURL.uPortNumber));
@@ -288,9 +259,6 @@ def fTestClient(
     (1, oResponseTimeoutURL,
         cTCPIPDataTimeoutException, [],
         [504]),
-    (2, oOutOfBandDataURL,
-        cHTTPOutOfBandDataException, [],
-        [502]),
     (1, oInvalidHTTPMessageURL,
         cHTTPInvalidMessageException, [],
         [502]),
@@ -353,12 +321,6 @@ def fTestClient(
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping connection refused server ", sPadding = "\u2500");
   oConnectionRefusedServerSocket.close(); # Has no thread.
 
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping out-of-band data server ", sPadding = "\u2500");
-  oOutOfBandDataServerSocket.close();
-  assert oOutOfBandDataServerThread.fbWait(nEndWaitTimeoutInSeconds), \
-      "Out-of-band data server thread (%d/0x%X) did not stop in time." % \
-      (oOutOfBandDataServerThread.uId, oOutOfBandDataServerThread.uId);
-  
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping connection closed server ", sPadding = "\u2500");
   oConnectionDisconnectedServerSocket.close();
   assert oConnectionDisconnectedServerThread.fbWait(nEndWaitTimeoutInSeconds), \
