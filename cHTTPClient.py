@@ -6,7 +6,6 @@ except ModuleNotFoundError as oException:
   ShowDebugOutput = lambda fx: fx; # NOP
   fShowDebugOutput = lambda x, s0 = None: x; # NOP
 
-from mHTTPConnection import cHTTPConnectionsToServerPool;
 from mMultiThreading import cLock, cWithCallbacks;
 from mNotProvided import \
   fbIsProvided, \
@@ -18,6 +17,7 @@ try: # SSL support is optional.
 except:
   c0CertificateStore = None; # No SSL support
 
+from .cHTTPConnectionsToServerPool import cHTTPConnectionsToServerPool;
 from .iHTTPClient import iHTTPClient;
 
 # To turn access to data store in multiple variables into a single transaction, we will create locks.
