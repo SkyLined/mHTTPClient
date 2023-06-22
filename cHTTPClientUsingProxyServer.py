@@ -566,14 +566,13 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       if oSelf.__bVerifyCertificates:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
           oServerBaseURL.sbHostname,
-          bzCheckHostname = oSelf.__bzCheckHostname,
         );
       else:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
       oConnectionToServerThroughProxy.fSecure(
         oSSLContext = oSSLContext,
         n0zTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
-        bzCheckHostname = False, # We are connecting to the proxy, not the server.
+        bzCheckHostname = oSelf.__bzCheckHostname,
       );
     # Remember that we now have this secure connection to the server
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.remove(oConnectionToServerThroughProxy);
