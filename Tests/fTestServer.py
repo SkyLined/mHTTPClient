@@ -7,7 +7,8 @@ def ftxRequestHandler(
 ):
   return (
     oConnection.foCreateResponse(s0Data = "Hello, world!"),
-    None,
+    oRequest.bIndicatesConnectionShouldBeClosed,
+    None, # No next connection handler
   );
 
 def fTestServer(
