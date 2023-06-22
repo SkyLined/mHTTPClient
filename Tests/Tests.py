@@ -78,8 +78,8 @@ try:
   
   bQuick = False;
   bTestClient = None;
-  bTestClientUsingProxyServer = False;
-  bTestClientUsingAutomaticProxyServer = None;
+  bTestClientUsingProxyServer = None;
+  bTestClientUsingAutomaticProxyServer = False;
   f0LogEvents = None;
   # Enable/disable output for all classes
   for sArgument in sys.argv[1:]:
