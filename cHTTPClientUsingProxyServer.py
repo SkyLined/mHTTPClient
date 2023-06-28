@@ -572,7 +572,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oConnectionToServerThroughProxy.fSecure(
         oSSLContext = oSSLContext,
         n0zTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
-        bzCheckHostname = oSelf.__bzCheckHostname,
+        bzCheckHostname = oSelf.__bzCheckHostname if oSelf.__bVerifyCertificates else False,
       );
     # Remember that we now have this secure connection to the server
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.remove(oConnectionToServerThroughProxy);
