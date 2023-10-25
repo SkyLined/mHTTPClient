@@ -61,7 +61,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     if bVerifyCertificates:
       oSelf.__bzCheckHostname = bzCheckHostname;
     else:
-      assert not fbIsProvided(bzCheckHostname) or not bzCheckHostnamem, \
+      assert not fbIsProvided(bzCheckHostname) or not bzCheckHostname, \
           "Cannot check hostname if certificates are not verified";
       oSelf.__bzCheckHostname = False;
     oSelf.__f0ResolveHostnameCallback = f0ResolveHostnameCallback;
