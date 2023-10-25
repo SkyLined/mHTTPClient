@@ -156,8 +156,6 @@ class iHTTPClient(cWithCallbacks):
       );
       if o0OriginalRequest is None:
         o0OriginalRequest = oRequest;
-      o0CookieStore = oSelf.o0CookieStore;
-      if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
       o0Response = oSelf.fo0GetResponseForRequestAndURL(
         oRequest,
         oURL,
@@ -176,8 +174,6 @@ class iHTTPClient(cWithCallbacks):
       assert o0Response, \
           "Expected a response but got %s" % repr(o0Response);
       oResponse = o0Response;
-      o0CookieStore = oSelf.o0CookieStore;
-      if o0CookieStore: o0CookieStore.fUpdateFromResponseAndURL(o0Response, oURL);
       # If we do not follow (any more) redirects, we are done.
       if uMaximumNumberOfRedirectsToFollow == 0:
         break;
