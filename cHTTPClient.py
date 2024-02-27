@@ -42,7 +42,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
     bzCheckHostname = zNotProvided,
-    f0ResolveHostnameCallback = None,
+    dsbSpoofedHostname_by_sbHostname = {},
   ):
     super().__init__(
       o0CookieStore = o0CookieStore,
@@ -64,19 +64,22 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       assert not fbIsProvided(bzCheckHostname) or not bzCheckHostname, \
           "Cannot check hostname if certificates are not verified";
       oSelf.__bzCheckHostname = False;
-    oSelf.__f0ResolveHostnameCallback = f0ResolveHostnameCallback;
+    oSelf.dsbSpoofedHostname_by_sbHostname = dsbSpoofedHostname_by_sbHostname;
     
     oSelf.__oPropertyAccessTransactionLock = cLock(
       "%s.__oPropertyAccessTransactionLock" % oSelf.__class__.__name__,
       n0DeadlockTimeoutInSeconds = gnDeadlockTimeoutInSeconds
     );
-    oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort = {};
+    oSelf.__doConnectionsToServerPool_by_sbBaseURL = {};
     
     oSelf.__bStopping = False;
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
     
     oSelf.fAddEvents(
-      "server hostname or ip address invalid", 
+      "spoofing server hostname",
+
+      "server hostname or ip address invalid",
+      
       "resolving server hostname", "resolving server hostname failed", "server hostname resolved to ip address",
       
       "connecting to server ip address", "connecting to server ip address failed",
@@ -104,7 +107,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       # Prevent any new cHTTPConnectionsToServerPool instances from being created.
       oSelf.__bStopping = True;
       # Grab a list of active cHTTPConnectionsToServerPool instances that need to be stopped.
-      aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort.values())
+      aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbBaseURL.values())
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     if len(aoConnectionsToServerPools) == 0:
@@ -131,7 +134,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       fShowDebugOutput(oSelf, "Terminating...");
       oSelf.__bStopping = True;
       # Grab a list of active cHTTPConnectionsToServerPool instances that need to be terminated.
-      aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort.values());
+      aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbBaseURL.values());
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     # Terminate all cHTTPConnectionsToServerPool instances
@@ -223,7 +226,21 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     # or not the connection is secure. We may want to change this to identification by IP address rather than host name.
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      oConnectionsToServerPool = oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort.get(oURL.sbBase);
+      # We may need to sppof the Hostname, which means connecting to the spoofed hostname
+      # but otherwise acting as if it was the original (e.g. for SSL context and `Host`
+      # header. We will create a `oServerBaseURL` that uniquely identifies a server using
+      # the protocol, (spoofed) hostname and port, which will be used for connecting sockets.
+      sbHostname = oURL.sbHostname.lower();
+      if sbHostname in oSelf.dsbSpoofedHostname_by_sbHostname:
+        sbSpoofedHostname = oSelf.dsbSpoofedHostname_by_sbHostname[sbHostname];
+        oSelf.fFireCallbacks(
+          "spoofing server hostname",
+          sbHostname = sbHostname,
+          sbSpoofedHostname = sbSpoofedHostname,
+        ),
+        sbHostname = sbSpoofedHostname;
+      oServerBaseURL = oURL.oBase.foClone(sbzHostname = sbHostname);
+      oConnectionsToServerPool = oSelf.__doConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
       if oConnectionsToServerPool:
         return oConnectionsToServerPool;
       # No connections to the server have been made before: create a new Pool.
@@ -239,7 +256,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         o0SSLContext = None;
       fShowDebugOutput(oSelf, "Creating new cConnectionsToServerPool for %s" % oURL.sbBase);
       oConnectionsToServerPool = cHTTPConnectionsToServerPool(
-        oServerBaseURL = oURL.oBase,
+        oServerBaseURL = oServerBaseURL,
         u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServer,
         o0SSLContext = o0SSLContext,
         bzCheckHostname = oSelf.__bzCheckHostname,
@@ -320,7 +337,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         ),
         "terminated": oSelf.__fHandleTerminatedCallbackForConnectionsToServerPool,
       });
-      oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort[oURL.sbBase] = oConnectionsToServerPool;
+      oSelf.__doConnectionsToServerPool_by_sbBaseURL[oServerBaseURL.sbBase] = oConnectionsToServerPool;
       return oConnectionsToServerPool;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
@@ -331,18 +348,18 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         "This is really unexpected!";
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      for sbProtocolHostPort in oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort:
-        if oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort[sbProtocolHostPort] == oConnectionsToServerPool:
-          fShowDebugOutput(oSelf, "Removing cConnectionsToServerPool for %s" % sbProtocolHostPort);
-          del oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort[sbProtocolHostPort];
+      for sbBaseURL in oSelf.__doConnectionsToServerPool_by_sbBaseURL:
+        if oSelf.__doConnectionsToServerPool_by_sbBaseURL[sbBaseURL] == oConnectionsToServerPool:
+          fShowDebugOutput(oSelf, "Removing cConnectionsToServerPool for %s" % sbBaseURL);
+          del oSelf.__doConnectionsToServerPool_by_sbBaseURL[sbBaseURL];
           break;
       else:
         raise AssertionError("A cConnectionsToServerPool instance reported that it terminated, but we were not aware it existed");
       # Return if we are not stopping or if there are other connections open:
       if not oSelf.__bStopping:
         return;
-      if len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort) > 0:
-        fShowDebugOutput(oSelf, "There are %d connections to server pools left." % len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort));
+      if len(oSelf.__doConnectionsToServerPool_by_sbBaseURL) > 0:
+        fShowDebugOutput(oSelf, "There are %d connections to server pools left." % len(oSelf.__doConnectionsToServerPool_by_sbBaseURL));
         return;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
@@ -358,7 +375,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       return ["terminated"];
     o0CookieStore = oSelf.o0CookieStore;
     return [s for s in [
-      "connected to %d servers" % len(oSelf.__doConnectionsToServerPool_by_sbProtocolHostPort),
+      "connected to %d servers" % len(oSelf.__doConnectionsToServerPool_by_sbBaseURL),
       "stopping" if oSelf.__bStopping else None,
     ] if s] + (
       o0CookieStore.fasGetDetails() if o0CookieStore else []
