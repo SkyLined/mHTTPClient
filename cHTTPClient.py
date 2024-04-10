@@ -41,8 +41,8 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     n0zSecureTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
-    bzCheckHostname = zNotProvided,
-    dsbSpoofedHostname_by_sbHostname = {},
+    bzCheckHost = zNotProvided,
+    dsbSpoofedHost_by_sbHost = {},
   ):
     super().__init__(
       o0CookieStore = o0CookieStore,
@@ -59,12 +59,12 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__n0zTransactionTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zTransactionTimeoutInSeconds, oSelf.n0zDefaultTransactionTimeoutInSeconds);
     oSelf.__bVerifyCertificates = bVerifyCertificates;
     if bVerifyCertificates:
-      oSelf.__bzCheckHostname = bzCheckHostname;
+      oSelf.__bzCheckHost = bzCheckHost;
     else:
-      assert not fbIsProvided(bzCheckHostname) or not bzCheckHostname, \
-          "Cannot check hostname if certificates are not verified";
-      oSelf.__bzCheckHostname = False;
-    oSelf.dsbSpoofedHostname_by_sbHostname = dsbSpoofedHostname_by_sbHostname;
+      assert not fbIsProvided(bzCheckHost) or not bzCheckHost, \
+          "Cannot check host if certificates are not verified";
+      oSelf.__bzCheckHost = False;
+    oSelf.dsbSpoofedHost_by_sbHost = dsbSpoofedHost_by_sbHost;
     
     oSelf.__oPropertyAccessTransactionLock = cLock(
       "%s.__oPropertyAccessTransactionLock" % oSelf.__class__.__name__,
@@ -76,9 +76,9 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
     
     oSelf.fAddEvents(
-      "spoofing server hostname",
+      "spoofing server host",
 
-      "server hostname or ip address invalid",
+      "server host invalid",
       
       "resolving server hostname", "resolving server hostname failed", "server hostname resolved to ip address",
       
@@ -226,28 +226,28 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     # or not the connection is secure. We may want to change this to identification by IP address rather than host name.
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      # We may need to sppof the Hostname, which means connecting to the spoofed hostname
+      # We may need to spoof the host, which means connecting to the spoofed host
       # but otherwise acting as if it was the original (e.g. for SSL context and `Host`
       # header. We will create a `oServerBaseURL` that uniquely identifies a server using
-      # the protocol, (spoofed) hostname and port, which will be used for connecting sockets.
-      sbHostname = oURL.sbHostname.lower();
-      if sbHostname in oSelf.dsbSpoofedHostname_by_sbHostname:
-        sbSpoofedHostname = oSelf.dsbSpoofedHostname_by_sbHostname[sbHostname];
+      # the protocol, (spoofed) host and port, which will be used for connecting sockets.
+      sbHost = oURL.sbHost.lower();
+      if sbHost in oSelf.dsbSpoofedHost_by_sbHost:
+        sbSpoofedHost = oSelf.dsbSpoofedHost_by_sbHost[sbHost];
         oSelf.fFireCallbacks(
-          "spoofing server hostname",
-          sbHostname = sbHostname,
-          sbSpoofedHostname = sbSpoofedHostname,
+          "spoofing server host",
+          sbHost = sbHost,
+          sbSpoofedHost = sbSpoofedHost,
         ),
-        sbHostname = sbSpoofedHostname;
-      oServerBaseURL = oURL.oBase.foClone(sbzHostname = sbHostname);
+        sbHost = sbSpoofedHost;
+      oServerBaseURL = oURL.oBase.foClone(sbzHost = sbHost);
       oConnectionsToServerPool = oSelf.__doConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
       if oConnectionsToServerPool:
         return oConnectionsToServerPool;
       # No connections to the server have been made before: create a new Pool.
       if oURL.bSecure and oSelf.__o0CertificateStore:
         if oSelf.__bVerifyCertificates:
-          o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
-            oURL.sbHostname,
+          o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHost(
+            oURL.sbHost,
           );
         else:
           o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
@@ -259,12 +259,12 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         oServerBaseURL = oServerBaseURL,
         u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServer,
         o0SSLContext = o0SSLContext,
-        bzCheckHostname = oSelf.__bzCheckHostname,
+        bzCheckHost = oSelf.__bzCheckHost,
       );
       oConnectionsToServerPool.fAddCallbacks({
-        "server hostname or ip address invalid": lambda oConnectionsToServerPool, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
-          "server hostname or ip address invalid",
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+        "server host invalid": lambda oConnectionsToServerPool, sbHost: oSelf.fFireCallbacks(
+          "server host invalid",
+          sbHost = sbHost,
         ),
         "resolving server hostname": lambda oConnectionsToServerPool, sbHostname: oSelf.fFireCallbacks(
           "resolving server hostname",
@@ -274,37 +274,35 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
           "resolving server hostname failed",
           sbHostname = sbHostname,
         ),
-        "server hostname resolved to ip address": lambda oConnectionsToServerPool, sbHostname, sIPAddress, sCanonicalName: oSelf.fFireCallbacks(
+        "server hostname resolved to ip address": lambda oConnectionsToServerPool, sbHostname, sbIPAddress, sCanonicalName: oSelf.fFireCallbacks(
           "server hostname resolved to ip address",
           sbHostname = sbHostname,
-          sIPAddress = sIPAddress,
+          sbIPAddress = sbIPAddress,
           sCanonicalName = sCanonicalName,
         ),
-        "connecting to server ip address": lambda oConnectionsToServerPool, sbHostnameOrIPAddress, sIPAddress, uPortNumber, sbzHostname: oSelf.fFireCallbacks(
+        "connecting to server ip address": lambda oConnectionsToServerPool, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
           "connecting to server ip address",
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
-          sIPAddress = sIPAddress,
+          sbHost = sbHost,
+          sbIPAddress = sbIPAddress,
           uPortNumber = uPortNumber,
-          sbzHostname = sbzHostname,
         ),
-        "connecting to server ip address failed": lambda oConnectionsToServerPool, oException, sbHostnameOrIPAddress, sIPAddress, uPortNumber, sbzHostname: oSelf.fFireCallbacks(
+        "connecting to server ip address failed": lambda oConnectionsToServerPool, oException, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
           "connecting to server ip address failed",
           oException = oException,
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
-          sIPAddress = sIPAddress,
+          sbHost = sbHost,
+          sbIPAddress = sbIPAddress,
           uPortNumber = uPortNumber,
-          sbzHostname = sbzHostname,
         ),
-        "connecting to server failed": lambda oConnectionsToServerPool, sbHostnameOrIPAddress, uPortNumber, oException: oSelf.fFireCallbacks(
+        "connecting to server failed": lambda oConnectionsToServerPool, sbHost, uPortNumber, oException: oSelf.fFireCallbacks(
           "connecting to server failed",
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sbHost = sbHost,
           uPortNumber = uPortNumber,
           oException = oException,
         ),
-        "connection to server created": lambda oConnectionsToServerPool, oConnection, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
+        "connection to server created": lambda oConnectionsToServerPool, oConnection, sbHost: oSelf.fFireCallbacks(
           "connection to server created",
           oConnection = oConnection,
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sbHost = sbHost,
         ),
         "bytes read": lambda oConnectionsToServerPool, oConnection, sbBytesRead: oSelf.fFireCallbacks(
           "bytes read",
@@ -330,10 +328,10 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
           oRequest = oRequest,
           oResponse = oResponse,
         ),
-        "connection to server terminated": lambda oConnectionsToServerPool, oConnection, sbHostnameOrIPAddress: oSelf.fFireCallbacks(
+        "connection to server terminated": lambda oConnectionsToServerPool, oConnection, sbHost: oSelf.fFireCallbacks(
           "connection to server terminated",
           oConnection = oConnection,
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sbHost = sbHost,
         ),
         "terminated": oSelf.__fHandleTerminatedCallbackForConnectionsToServerPool,
       });

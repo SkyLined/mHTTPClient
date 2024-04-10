@@ -48,7 +48,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oProxyServerURL,
     *,
     bVerifyCertificatesForProxy = True,
-    bzCheckProxyHostname = zNotProvided,
+    bzCheckProxyHost = zNotProvided,
     o0CookieStore = None,
     o0zCertificateStore = zNotProvided,
     u0zMaxNumberOfConnectionsToProxy = zNotProvided,
@@ -57,14 +57,14 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
     bVerifyCertificates = True,
-    bzCheckHostname = zNotProvided,
+    bzCheckHost = zNotProvided,
   ):
     super().__init__(
       o0CookieStore = o0CookieStore,
     );
     oSelf.oProxyServerURL = oProxyServerURL;
     oSelf.__bVerifyCertificatesForProxy = bVerifyCertificatesForProxy;
-    oSelf.__bzCheckProxyHostname = bzCheckProxyHostname;
+    oSelf.__bzCheckProxyHost = bzCheckProxyHost;
     
     oSelf.__o0CertificateStore = (
       o0zCertificateStore if fbIsProvided(o0zCertificateStore) else
@@ -80,7 +80,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
     oSelf.__n0TransactionTimeoutInSeconds = fxGetFirstProvidedValue(n0zTransactionTimeoutInSeconds, oSelf.n0DefaultTransactionTimeoutInSeconds);
     oSelf.__bVerifyCertificates = bVerifyCertificates;
-    oSelf.__bzCheckHostname = bzCheckHostname;
+    oSelf.__bzCheckHost = bzCheckHost;
     
     if not oProxyServerURL.bSecure:
       oSelf.__o0ProxySSLContext = None;
@@ -88,8 +88,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       assert oSelf.__o0CertificateStore, \
           "A secure proxy cannot be used if no certificate store is available!";
       if bVerifyCertificatesForProxy:
-        oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
-          oProxyServerURL.sbHostname,
+        oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHost(
+          oProxyServerURL.sbHost,
         );
       else:
         oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
@@ -113,7 +113,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     );
     
     oSelf.fAddEvents(
-      "proxy hostname or ip address invalid",
+      "proxy host invalid",
       "resolving proxy hostname", "resolving proxy hostname failed", "proxy hostname resolved to ip address",
       
       "connecting to proxy ip address", "connecting to proxy ip address failed",
@@ -387,14 +387,14 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     fShowDebugOutput("Connecting to %s..." % oSelf.oProxyServerURL);
     try:
       oConnection = cHTTPConnection.foConnectTo(
-        sbHostnameOrIPAddress = oSelf.oProxyServerURL.sbHostname,
+        sbHost = oSelf.oProxyServerURL.sbHost,
         uPortNumber = oSelf.oProxyServerURL.uPortNumber,
         n0zConnectTimeoutInSeconds = n0zConnectTimeoutInSeconds,
         o0SSLContext = oSelf.__o0ProxySSLContext,
-        bzCheckHostname = oSelf.__bzCheckProxyHostname,
+        bzCheckHost = oSelf.__bzCheckProxyHost,
         n0zSecureTimeoutInSeconds = oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds,
-        f0HostnameOrIPAddressInvalidCallback = lambda sbHostnameOrIPAddress: oSelf.fFireCallbacks(
-          "proxy hostname or ip address invalid",
+        f0HostInvalidCallback = lambda sbHost: oSelf.fFireCallbacks(
+          "proxy host invalid",
           oProxyServerURL = oSelf.oProxyServerURL,
         ),
         f0ResolvingHostnameCallback = lambda sbHostname: oSelf.fFireCallbacks(
@@ -405,24 +405,24 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
           "resolving proxy hostname failed",
           oProxyServerURL = oSelf.oProxyServerURL,
         ),
-        f0HostnameResolvedToIPAddressCallback = lambda sbHostname, sIPAddress, sCanonicalName: oSelf.fFireCallbacks(
+        f0HostnameResolvedToIPAddressCallback = lambda sbHostname, sbIPAddress, sCanonicalName: oSelf.fFireCallbacks(
           "proxy hostname resolved to ip address",
           oProxyServerURL = oSelf.oProxyServerURL,
-          sIPAddress = sIPAddress,
+          sbIPAddress = sbIPAddress,
           sCanonicalName = sCanonicalName,
         ),
-        f0ConnectingToIPAddressCallback = lambda sbHostnameOrIPAddress, uPortNumber, sIPAddress, sbzHostname: oSelf.fFireCallbacks(
+        f0ConnectingToIPAddressCallback = lambda sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
           "connecting to proxy ip address",
           oProxyServerURL = oSelf.oProxyServerURL,
-          sIPAddress = sIPAddress,
-          sbzHostname = sbzHostname,
+          sbIPAddress = sbIPAddress,
+          uPortNumber = uPortNumber,
         ),
-        f0ConnectingToIPAddressFailedCallback = lambda oException, sbHostnameOrIPAddress, uPortNumber, sIPAddress, sbzHostname: oSelf.fFireCallbacks(
+        f0ConnectingToIPAddressFailedCallback = lambda oException, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
           "connecting to proxy ip address failed",
           oException = oException,
           oProxyServerURL = oSelf.oProxyServerURL,
-          sIPAddress = sIPAddress,
-          sbzHostname = sbzHostname,
+          sbIPAddress = sbIPAddress,
+          uPortNumber = uPortNumber,
         ),
       );
     except cHTTPConnection.tcExceptions as oException:
@@ -564,15 +564,15 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       assert oSelf.__o0CertificateStore, \
           "Cannot make secure requests without a certificate store";
       if oSelf.__bVerifyCertificates:
-        oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHostname(
-          oServerBaseURL.sbHostname,
+        oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextForHost(
+          oServerBaseURL.sbHost,
         );
       else:
         oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
       oConnectionToServerThroughProxy.fSecure(
         oSSLContext = oSSLContext,
         n0zTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
-        bzCheckHostname = oSelf.__bzCheckHostname if oSelf.__bVerifyCertificates else False,
+        bzCheckHost = oSelf.__bzCheckHost if oSelf.__bVerifyCertificates else False,
       );
     # Remember that we now have this secure connection to the server
     oSelf.__aoConnectionsToProxyNotConnectedToAServer.remove(oConnectionToServerThroughProxy);

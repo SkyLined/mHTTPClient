@@ -29,12 +29,12 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     *,
     u0zMaxNumberOfConnectionsToServer = zNotProvided,
     o0SSLContext = None,
-    bzCheckHostname = zNotProvided,
+    bzCheckHost = zNotProvided,
   ):
     oSelf.__oServerBaseURL = oServerBaseURL;
     oSelf.__u0MaxNumberOfConnectionsToServer = fxGetFirstProvidedValue(u0zMaxNumberOfConnectionsToServer, gu0DefaultMaxNumberOfConnectionsToServer);
     oSelf.__o0SSLContext = o0SSLContext;
-    oSelf.__bzCheckHostname = bzCheckHostname;
+    oSelf.__bzCheckHost = bzCheckHost;
     
     oSelf.__oConnectionsPropertyLock = cLock(
       "%s.__oConnectionsPropertyLock" % oSelf.__class__.__name__,
@@ -55,7 +55,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     );
     
     oSelf.fAddEvents(
-      "server hostname or ip address invalid",
+      "server host invalid",
       
       "resolving server hostname", "resolving server hostname failed", "server hostname resolved to ip address",
       
@@ -169,7 +169,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     *,
     n0zConnectTimeoutInSeconds = zNotProvided,
     bSecureConnection = True,
-    bzCheckHostname = zNotProvided,
+    bzCheckHost = zNotProvided,
     n0zSecureTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
   ):
@@ -180,7 +180,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     o0Connection = oSelf.__fo0GetConnectionAndStartTransaction(
       n0zConnectTimeoutInSeconds,
       bSecureConnection,
-      bzCheckHostname,
+      bzCheckHost,
       n0zSecureTimeoutInSeconds,
       n0zTransactionTimeoutInSeconds,
     );
@@ -200,7 +200,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     oSelf,
     n0zConnectTimeoutInSeconds,
     bSecureConnection,
-    bzCheckHostname,
+    bzCheckHost,
     n0zSecureTimeoutInSeconds,
     n0zTransactionTimeoutInSeconds,
   ):
@@ -223,7 +223,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
         return oSelf.__foCreateNewConnectionAndStartTransaction(
           n0zConnectTimeoutInSeconds,
           bSecureConnection,
-          bzCheckHostname,
+          bzCheckHost,
           n0zSecureTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds,
         );
@@ -251,7 +251,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     # connection is started before and ended after this exchange.
     # An existing connection is reused if one is available. A new connection
     # if created if none is available and there are not too many connections.
-    # If not specified, always check the hostname when the connection is secure.
+    # If not specified, always check the host when the connection is secure.
     # Can throw a max-connections-reached exception.
     # This is done in a loop: if a (reused) connection turns out to be closed, 
     # we start again, reusing another connection, or creating a new one.
@@ -261,7 +261,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
       o0Connection = oSelf.__fo0GetConnectionAndStartTransaction(
         n0zConnectTimeoutInSeconds = n0zConnectTimeoutInSeconds,
         bSecureConnection = True,
-        bzCheckHostname = oSelf.__bzCheckHostname,
+        bzCheckHost = oSelf.__bzCheckHost,
         n0zSecureTimeoutInSeconds = n0zSecureTimeoutInSeconds,
         n0zTransactionTimeoutInSeconds = n0zTransactionTimeoutInSeconds,
       );
@@ -333,7 +333,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
   def __foCreateNewConnectionAndStartTransaction(oSelf,
     n0zConnectTimeoutInSeconds,
     bSecureConnection,
-    bzCheckHostname,
+    bzCheckHost,
     n0zSecureTimeoutInSeconds,
     n0zTransactionTimeoutInSeconds,
   ):
@@ -358,15 +358,15 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     # Try to establish a connection:
     try:
       oConnection = cHTTPConnection.foConnectTo(
-        sbHostnameOrIPAddress = oSelf.__oServerBaseURL.sbHostname,
+        sbHost = oSelf.__oServerBaseURL.sbHost,
         uPortNumber = oSelf.__oServerBaseURL.uPortNumber,
         n0zConnectTimeoutInSeconds = n0zConnectTimeoutInSeconds,
         o0SSLContext = oSelf.__o0SSLContext if bSecureConnection else None,
-        bzCheckHostname = fxzGetFirstProvidedValueIfAny(bzCheckHostname, oSelf.__bzCheckHostname),
+        bzCheckHost = fxzGetFirstProvidedValueIfAny(bzCheckHost, oSelf.__bzCheckHost),
         n0zSecureTimeoutInSeconds = n0zSecureTimeoutInSeconds,
-        f0HostnameOrIPAddressInvalidCallback = lambda sbHostnameOrIPAddress: oSelf.fFireCallbacks(
-          "server hostname or ip address invalid",
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+        f0HostInvalidCallback = lambda sbHost: oSelf.fFireCallbacks(
+          "server host invalid",
+          sbHost = sbHost,
         ),
         f0ResolvingHostnameCallback = lambda sbHostname: oSelf.fFireCallbacks(
           "resolving server hostname",
@@ -376,26 +376,24 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
           "resolving server hostname failed",
           sbHostname = sbHostname,
         ),
-        f0HostnameResolvedToIPAddressCallback = lambda sbHostname, sIPAddress, sCanonicalName: oSelf.fFireCallbacks(
+        f0HostnameResolvedToIPAddressCallback = lambda sbHostname, sbIPAddress, sCanonicalName: oSelf.fFireCallbacks(
           "server hostname resolved to ip address",
           sbHostname = sbHostname,
-          sIPAddress = sIPAddress,
+          sbIPAddress = sbIPAddress,
           sCanonicalName = sCanonicalName,
         ),
-        f0ConnectingToIPAddressCallback = lambda sbHostnameOrIPAddress, uPortNumber, sIPAddress, sbzHostname: oSelf.fFireCallbacks(
+        f0ConnectingToIPAddressCallback = lambda sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
           "connecting to server ip address",
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sbHost = sbHost,
           uPortNumber = uPortNumber,
-          sIPAddress = sIPAddress,
-          sbzHostname = sbzHostname,
+          sbIPAddress = sbIPAddress,
         ),
-        f0ConnectingToIPAddressFailedCallback = lambda oException, sbHostnameOrIPAddress, uPortNumber, sIPAddress, sbzHostname: oSelf.fFireCallbacks(
+        f0ConnectingToIPAddressFailedCallback = lambda oException, sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
           "connecting to server ip address failed",
           oException = oException,
-          sbHostnameOrIPAddress = sbHostnameOrIPAddress,
+          sbHost = sbHost,
           uPortNumber = uPortNumber,
-          sIPAddress = sIPAddress,
-          sbzHostname = sbzHostname,
+          sbIPAddress = sbIPAddress,
         ),
       );
     except cHTTPConnection.tcExceptions as oException:
@@ -407,7 +405,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
       oSelf.fFireCallbacks(
         "connecting to server failed",
         oException = oException,
-        sbHostnameOrIPAddress = oSelf.__oServerBaseURL.sbHostname,
+        sbHost = oSelf.__oServerBaseURL.sbHost,
         uPortNumber = oSelf.__oServerBaseURL.uPortNumber,
       );
       raise;
@@ -444,7 +442,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     oSelf.fFireCallbacks(
       "connection to server created",
       oConnection = oConnection,
-      sbHostnameOrIPAddress = oSelf.__oServerBaseURL.sbHostname,
+      sbHost = oSelf.__oServerBaseURL.sbHost,
     );
     return oConnection;
   
@@ -462,7 +460,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     oSelf.fFireCallbacks(
       "connection to server terminated",
       oConnection = oConnection,
-      sbHostnameOrIPAddress = oSelf.__oServerBaseURL.sbHostname,
+      sbHost = oSelf.__oServerBaseURL.sbHost,
     );
     if bCheckIfTerminated:
       oSelf.__fReportTerminatedIfNoMoreConnectionsExist();

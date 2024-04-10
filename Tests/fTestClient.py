@@ -1,16 +1,16 @@
 import socket, threading;
 
 from mConsole import oConsole;
-from mHTTPConnection import cHTTPConnection;
-from mHTTPConnection.mExceptions import \
-    cHTTPInvalidMessageException, \
-    cTCPIPDataTimeoutException, \
-    cTCPIPDNSUnknownHostnameException, \
-    cTCPIPInvalidAddressException, \
-    cTCPIPConnectionDisconnectedException, \
-    cTCPIPConnectionRefusedException, \
-    cTCPIPConnectionShutdownException, \
-    cTCPIPConnectTimeoutException;
+from mHTTPConnection.mExceptions import (
+    cHTTPInvalidMessageException,
+    cTCPIPDataTimeoutException,
+    cTCPIPDNSNameCannotBeResolvedException,
+    cTCPIPInvalidAddressException,
+    cTCPIPConnectionDisconnectedException,
+    cTCPIPConnectionRefusedException,
+    cTCPIPConnectionShutdownException,
+    cTCPIPConnectTimeoutException,
+);
 from mHTTPProtocol import cURL;
 from mMultiThreading import cThread;
 
@@ -29,7 +29,7 @@ def foGetServerURL(sNote):
 oTestURL = cURL.foFromBytesString(b"http://example.com/");
 oSecureTestURL = cURL.foFromBytesString(b"https://example.com/");
 oSecureRedirectURL = cURL.foFromBytesString(b"http://skylined.nl/");
-oUnknownHostnameURL = cURL.foFromBytesString(b"http://does.not.exist.example.com/unknown-hostname");
+oUnknownHostURL = cURL.foFromBytesString(b"http://does.not.exist.example.com/unknown-host");
 oInvalidAddressURL = cURL.foFromBytesString(b"http://0.0.0.0/invalid-address");
 oConnectionRefusedURL = foGetServerURL(b"refuse-connection");
 oConnectTimeoutURL = foGetServerURL(b"connect-timeout");
@@ -175,11 +175,11 @@ def fTestClient(
   
   # Create a server on a socket but do not listen so connections are refused.
   oConnectionRefusedServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oConnectionRefusedServerSocket.bind((oConnectionRefusedURL.sbHostname, oConnectionRefusedURL.uPortNumber));
+  oConnectionRefusedServerSocket.bind((oConnectionRefusedURL.sbHost, oConnectionRefusedURL.uPortNumber));
 
   # Create a server on a socket that immediately closes the connection.
   oConnectionDisconnectedServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oConnectionDisconnectedServerSocket.bind((oConnectionDisconnectedURL.sbHostname, oConnectionDisconnectedURL.uPortNumber));
+  oConnectionDisconnectedServerSocket.bind((oConnectionDisconnectedURL.sbHost, oConnectionDisconnectedURL.uPortNumber));
   oConnectionDisconnectedServerSocket.listen(1);
   def fConnectionDisconnectedServerThread():
     (oClientSocket, (sClientIP, uClientPortNumber)) = oConnectionDisconnectedServerSocket.accept();
@@ -192,7 +192,7 @@ def fTestClient(
   
   # Create a server on a socket that immediately shuts down the connection.
   oConnectionShutdownServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oConnectionShutdownServerSocket.bind((oConnectionShutdownURL.sbHostname, oConnectionShutdownURL.uPortNumber));
+  oConnectionShutdownServerSocket.bind((oConnectionShutdownURL.sbHost, oConnectionShutdownURL.uPortNumber));
   oConnectionShutdownServerSocket.listen(1);
   def fConnectionShutdownServerThread():
     (oClientSocket, (sClientIP, uClientPortNumber)) = oConnectionShutdownServerSocket.accept();
@@ -201,6 +201,8 @@ def fTestClient(
     oConsole.fOutput("Shutdown server is sleeping to keep the connection open....");
     oServersShouldBeRunningLock.acquire();
     oServersShouldBeRunningLock.release();
+    oConsole.fOutput("Shutdown server is disconnecting the connection...");
+    oClientSocket.close();
     oConsole.fOutput("Shutdown server thread terminated.");
     
   oConnectionShutdownServerThread = cThread(fConnectionShutdownServerThread);
@@ -208,7 +210,7 @@ def fTestClient(
 
   # Create a server on a socket that does not send a response.
   oResponseTimeoutServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oResponseTimeoutServerSocket.bind((oResponseTimeoutURL.sbHostname, oResponseTimeoutURL.uPortNumber));
+  oResponseTimeoutServerSocket.bind((oResponseTimeoutURL.sbHost, oResponseTimeoutURL.uPortNumber));
   oResponseTimeoutServerSocket.listen(1);
   def fResponseTimeoutServerThread():
     (oClientSocket, (sClientIP, uClientPortNumber)) = oResponseTimeoutServerSocket.accept();
@@ -217,6 +219,8 @@ def fTestClient(
     oConsole.fOutput("Response timeout server is sleeping to avoid sending a response...");
     oServersShouldBeRunningLock.acquire();
     oServersShouldBeRunningLock.release();
+    oConsole.fOutput("Response timeout server is disconnecting the connection...");
+    oClientSocket.close();
     oConsole.fOutput("Response timeout thread terminated.");
     
   oResponseTimeoutServerThread = cThread(fResponseTimeoutServerThread);
@@ -224,7 +228,7 @@ def fTestClient(
 
   # Create a server on a socket that sends an invalid response.
   oInvalidHTTPMessageServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oInvalidHTTPMessageServerSocket.bind((oInvalidHTTPMessageURL.sbHostname, oInvalidHTTPMessageURL.uPortNumber));
+  oInvalidHTTPMessageServerSocket.bind((oInvalidHTTPMessageURL.sbHost, oInvalidHTTPMessageURL.uPortNumber));
   oInvalidHTTPMessageServerSocket.listen(1);
   sbInvalidResponse = b"Hello, world!\r\n";
   def fInvalidHTTPMessageServerThread():
@@ -233,13 +237,17 @@ def fTestClient(
     oClientSocket.recv(0x1000); # This should cover the request, which we discard.
     oClientSocket.send(sbInvalidResponse);
     oConsole.fOutput("Invalid HTTP Message server thread terminated.");
+    oServersShouldBeRunningLock.acquire();
+    oServersShouldBeRunningLock.release();
+    oConsole.fOutput("Invalid HTTP Message server is disconnecting the connection...");
+    oClientSocket.close();
   
   oInvalidHTTPMessageServerThread = cThread(fInvalidHTTPMessageServerThread);
   oInvalidHTTPMessageServerThread.fStart(bVital = False);
   
   for (uNumberOfRequests, oURL, cExpectedExceptionClass, acAcceptableExceptionClasses, auAcceptableStatusCodes) in (
-    (1, oUnknownHostnameURL,
-        cTCPIPDNSUnknownHostnameException, [],
+    (1, oUnknownHostURL,
+        cTCPIPDNSNameCannotBeResolvedException, [],
         [400]),
     (1, oInvalidAddressURL,
         cTCPIPInvalidAddressException, [],

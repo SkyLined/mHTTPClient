@@ -129,11 +129,11 @@ try:
         raise AssertionError("Unknown argument %s" % sArgument);
   
   nEndWaitTimeoutInSeconds = 10;
-  sbTestHostname = b"localhost";
+  sbTestHost = b"localhost";
   
-  oLocalNonSecureURL = mHTTPClient.cURL.foFromBytesString(b"http://%s:28876/local-non-secure" % sbTestHostname);
-  oLocalSecureURL = mHTTPClient.cURL.foFromBytesString(b"https://%s:28876/local-secure" % sbTestHostname);
-  oProxyServerURL = mHTTPClient.cURL.foFromBytesString(b"https://%s:28876" % sbTestHostname);
+  oLocalNonSecureURL = mHTTPClient.cURL.foFromBytesString(b"http://%s:28876/local-non-secure" % sbTestHost);
+  oLocalSecureURL = mHTTPClient.cURL.foFromBytesString(b"https://%s:28876/local-secure" % sbTestHost);
+  oProxyServerURL = mHTTPClient.cURL.foFromBytesString(b"https://%s:28876" % sbTestHost);
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cCertificateStore instance ".ljust(160, "\u2500"));
   
   if m0SSL is not None:
@@ -149,8 +149,8 @@ try:
       else:
         oConsole.fOutput(HEADER, "\u2500\u2500\u2500\u2500 Delete Certificate Authority folder... ", sPadding = "\u2500");
         oCertificateAuthority.fDeleteCacheFolder(fShowDeleteOrOverwriteFileOrFolder);
-    # Create a self-signed certificate for the test hostname.
-    oCertificateAuthority.foGenerateServersideSSLContextForHostname(sbTestHostname);
+    # Create a self-signed certificate for the test host.
+    oCertificateAuthority.foGenerateServersideSSLContextForHost(sbTestHost);
     o0CertificateStore = m0SSL.cCertificateStore();
     o0CertificateStore.fAddCertificateAuthority(oCertificateAuthority);
     oConsole.fOutput("  o0CertificateStore = %s" % o0CertificateStore);
