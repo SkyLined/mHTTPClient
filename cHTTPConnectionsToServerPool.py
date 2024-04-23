@@ -75,6 +75,11 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
   def bTerminated(oSelf):
     return not oSelf.__oTerminatedLock.bLocked;
   
+  # Check to make sure the connections to server pool is terminated before being discarded.
+  def __del__(oSelf):
+    assert oSelf.bTerminated, \
+        "%s was not terminated before being deleted!" % oSelf;
+  
   @property
   def uConnectionsCount(oSelf):
     return len(oSelf.__aoConnections) + len(oSelf.__aoExternallyManagedConnections);

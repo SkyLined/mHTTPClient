@@ -36,7 +36,15 @@ class iHTTPClient(cWithCallbacks):
     o0CookieStore = None,
   ):
     oSelf.o0CookieStore = o0CookieStore;
-
+  
+  @property
+  def bTerminated(oSelf):
+    raise NotImplementedError("bTerminated has not been implemented!");
+  # Check to make sure the connections to server pool is terminated before being discarded.
+  def __del__(oSelf):
+    assert oSelf.bTerminated, \
+        "%s was not terminated before being deleted!" % oSelf;
+  
   @staticmethod
   def foURLFromString(sURL):
     return cURL.foFromBytesString(bytes(sURL, "ascii", "strict"));

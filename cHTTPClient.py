@@ -95,6 +95,10 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   def bStopping(oSelf):
     return oSelf.__bStopping;
   
+  @property
+  def bTerminated(oSelf):
+    return not oSelf.__oTerminatedLock.bLocked;
+  
   @ShowDebugOutput
   def fStop(oSelf):
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
@@ -120,10 +124,6 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       # Stop all cHTTPConnectionsToServerPool instances
       for oConnectionsToServerPool in aoConnectionsToServerPools:
         oConnectionsToServerPool.fStop();
-  
-  @property
-  def bTerminated(oSelf):
-    return not oSelf.__oTerminatedLock.bLocked;
   
   @ShowDebugOutput
   def fTerminate(oSelf):

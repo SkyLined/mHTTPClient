@@ -157,6 +157,10 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
   def bStopping(oSelf):
     return oSelf.__bStopping;
   
+  @property
+  def bTerminated(oSelf):
+    return not oSelf.__oTerminatedLock.bLocked;
+  
   @ShowDebugOutput
   def fStop(oSelf):
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
@@ -182,10 +186,6 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       oDirectHTTPClient.fStop();
     for oHTTPClientUsingProxyServer in aoHTTPClientsUsingProxyServer:
       oHTTPClientUsingProxyServer.fStop();
-  
-  @property
-  def bTerminated(oSelf):
-    return not oSelf.__oTerminatedLock.bLocked;
   
   @ShowDebugOutput
   def fTerminate(oSelf):
