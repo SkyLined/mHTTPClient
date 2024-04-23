@@ -28,7 +28,7 @@ def foGetServerURL(sNote):
 
 oTestURL = cURL.foFromBytesString(b"http://example.com/");
 oSecureTestURL = cURL.foFromBytesString(b"https://example.com/");
-oSecureRedirectURL = cURL.foFromBytesString(b"http://skylined.nl/");
+oSecureRedirectURL = cURL.foFromBytesString(b"http://skylined.nl/pgp");
 oUnknownHostURL = cURL.foFromBytesString(b"http://does.not.exist.example.com/unknown-host");
 oInvalidAddressURL = cURL.foFromBytesString(b"http://0.0.0.0/invalid-address");
 oConnectionRefusedURL = foGetServerURL(b"refuse-connection");
