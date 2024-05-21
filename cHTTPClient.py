@@ -70,7 +70,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       "%s.__oPropertyAccessTransactionLock" % oSelf.__class__.__name__,
       n0DeadlockTimeoutInSeconds = gnDeadlockTimeoutInSeconds
     );
-    oSelf.__doConnectionsToServerPool_by_sbBaseURL = {};
+    oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL = {};
     
     oSelf.__bStopping = False;
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
@@ -111,10 +111,10 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       # Prevent any new cHTTPConnectionsToServerPool instances from being created.
       oSelf.__bStopping = True;
       # Grab a list of active cHTTPConnectionsToServerPool instances that need to be stopped.
-      aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbBaseURL.values())
+      aoHTTPConnectionsToServerPools = list(oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.values());
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
-    if len(aoConnectionsToServerPools) == 0:
+    if len(aoHTTPConnectionsToServerPools) == 0:
       # We stopped when there were no connections: we are terminated.
       fShowDebugOutput(oSelf, "Terminated.");
       oSelf.__oTerminatedLock.fRelease();
@@ -122,7 +122,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     else:
       fShowDebugOutput(oSelf, "Stopping connections to server pools...");
       # Stop all cHTTPConnectionsToServerPool instances
-      for oConnectionsToServerPool in aoConnectionsToServerPools:
+      for oConnectionsToServerPool in aoHTTPConnectionsToServerPools:
         oConnectionsToServerPool.fStop();
   
   @ShowDebugOutput
@@ -134,17 +134,17 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       fShowDebugOutput(oSelf, "Terminating...");
       oSelf.__bStopping = True;
       # Grab a list of active cHTTPConnectionsToServerPool instances that need to be terminated.
-      aoConnectionsToServerPools = list(oSelf.__doConnectionsToServerPool_by_sbBaseURL.values());
+      aoHTTPConnectionsToServerPools = list(oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.values());
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     # Terminate all cHTTPConnectionsToServerPool instances
-    if len(aoConnectionsToServerPools) == 0:
+    if len(aoHTTPConnectionsToServerPools) == 0:
       fShowDebugOutput(oSelf, "Terminated.");
       oSelf.__oTerminatedLock.fRelease();
       oSelf.fFireCallbacks("terminated");
     else:
-      fShowDebugOutput(oSelf, "Terminating %d connections to server pools..." % len(aoConnectionsToServerPools));
-      for oConnectionsToServerPool in aoConnectionsToServerPools:
+      fShowDebugOutput(oSelf, "Terminating %d connections to server pools..." % len(aoHTTPConnectionsToServerPools));
+      for oConnectionsToServerPool in aoHTTPConnectionsToServerPools:
         oConnectionsToServerPool.fTerminate();
   
   @ShowDebugOutput
@@ -240,7 +240,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         ),
         sbHost = sbSpoofedHost;
       oServerBaseURL = oURL.oBase.foClone(sbzHost = sbHost);
-      oConnectionsToServerPool = oSelf.__doConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
+      oConnectionsToServerPool = oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
       if oConnectionsToServerPool:
         return oConnectionsToServerPool;
       # No connections to the server have been made before: create a new Pool.
@@ -335,7 +335,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         ),
         "terminated": oSelf.__fHandleTerminatedCallbackForConnectionsToServerPool,
       });
-      oSelf.__doConnectionsToServerPool_by_sbBaseURL[oServerBaseURL.sbBase] = oConnectionsToServerPool;
+      oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL[oServerBaseURL.sbBase] = oConnectionsToServerPool;
       return oConnectionsToServerPool;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
@@ -346,18 +346,18 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         "This is really unexpected!";
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      for sbBaseURL in oSelf.__doConnectionsToServerPool_by_sbBaseURL:
-        if oSelf.__doConnectionsToServerPool_by_sbBaseURL[sbBaseURL] == oConnectionsToServerPool:
+      for sbBaseURL in oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL:
+        if oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL[sbBaseURL] == oConnectionsToServerPool:
           fShowDebugOutput(oSelf, "Removing cConnectionsToServerPool for %s" % sbBaseURL);
-          del oSelf.__doConnectionsToServerPool_by_sbBaseURL[sbBaseURL];
+          del oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL[sbBaseURL];
           break;
       else:
         raise AssertionError("A cConnectionsToServerPool instance reported that it terminated, but we were not aware it existed");
       # Return if we are not stopping or if there are other connections open:
       if not oSelf.__bStopping:
         return;
-      if len(oSelf.__doConnectionsToServerPool_by_sbBaseURL) > 0:
-        fShowDebugOutput(oSelf, "There are %d connections to server pools left." % len(oSelf.__doConnectionsToServerPool_by_sbBaseURL));
+      if len(oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL) > 0:
+        fShowDebugOutput(oSelf, "There are %d connections to server pools left." % len(oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL));
         return;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
@@ -373,7 +373,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       return ["terminated"];
     o0CookieStore = oSelf.o0CookieStore;
     return [s for s in [
-      "connected to %d servers" % len(oSelf.__doConnectionsToServerPool_by_sbBaseURL),
+      "connected to %d servers" % len(oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL),
       "stopping" if oSelf.__bStopping else None,
     ] if s] + (
       o0CookieStore.fasGetDetails() if o0CookieStore else []
