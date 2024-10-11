@@ -68,11 +68,11 @@ def fTestClient(
   ############################################
   if oHTTPClient.__class__.__name__ == "cHTTPClient": 
     # cHTTPClient specific checks
-    asbConnectionPoolsProtocolHostPort = set(oHTTPClient._cHTTPClient__doConnectionsToServerPool_by_sbBaseURL.keys());
+    asbConnectionPoolsProtocolHostPort = set(oHTTPClient._cHTTPClient__doHTTPConnectionsToServerPool_by_sbBaseURL.keys());
     assert asbConnectionPoolsProtocolHostPort == set((oTestURL.sbBase,)), \
         "Expected a oHTTPClient instance to have one cConnectionsToServerPool instance for %s, but found %s" % \
         (oTestURL.sbBase, repr(asbConnectionPoolsProtocolHostPort));
-    oConnectionsToServerPool = oHTTPClient._cHTTPClient__doConnectionsToServerPool_by_sbBaseURL.get(oTestURL.sbBase);
+    oConnectionsToServerPool = oHTTPClient._cHTTPClient__doHTTPConnectionsToServerPool_by_sbBaseURL.get(oTestURL.sbBase);
     assert oConnectionsToServerPool, \
         "Expected a cConnectionsToServerPool instance for %s, but found none" % oTestURL;
     aoConnections = oConnectionsToServerPool._cHTTPConnectionsToServerPool__aoConnections;
@@ -116,12 +116,12 @@ def fTestClient(
     oConsole.fOutput("  oResponse = %s" % oResponse);
     if oHTTPClient.__class__.__name__ == "cHTTPClient": 
       # cHTTPClient specific checks
-      asbConnectionPoolsProtocolHostPort = set(oHTTPClient._cHTTPClient__doConnectionsToServerPool_by_sbBaseURL.keys());
+      asbConnectionPoolsProtocolHostPort = set(oHTTPClient._cHTTPClient__doHTTPConnectionsToServerPool_by_sbBaseURL.keys());
       assert asbConnectionPoolsProtocolHostPort == set((oTestURL.sbBase, oSecureTestURL.sbBase)), \
           "Expected a oHTTPClient instance to have a cConnectionsToServerPool instance for %s and %s, but found %s" % \
           (oTestURL.sbBase, oSecureTestURL.sbBase, repr(asbConnectionPoolsProtocolHostPort));
       
-      oConnectionsToServerPool = oHTTPClient._cHTTPClient__doConnectionsToServerPool_by_sbBaseURL.get(oSecureTestURL.sbBase);
+      oConnectionsToServerPool = oHTTPClient._cHTTPClient__doHTTPConnectionsToServerPool_by_sbBaseURL.get(oSecureTestURL.sbBase);
       assert oConnectionsToServerPool, \
           "Expected a cConnectionsToServerPool instance for %s, but found none" % oSecureTestURL;
       aoConnections = oConnectionsToServerPool._cHTTPConnectionsToServerPool__aoConnections;
