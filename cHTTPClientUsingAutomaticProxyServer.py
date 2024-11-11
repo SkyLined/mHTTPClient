@@ -75,6 +75,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     n0zConnectToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
+    nSendDelayPerByteInSeconds = 0,
     bVerifyCertificates = True,
     bzCheckHost = zNotProvided,
   ):
@@ -128,6 +129,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     
     oSelf.__bStopping = False;
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
+    oSelf.nSendDelayPerByteInSeconds = 0;
     
     oSelf.fAddEvents(
       "proxy selected",
@@ -162,6 +164,12 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
   @property
   def bTerminated(oSelf):
     return not oSelf.__oTerminatedLock.bLocked;
+  
+  def fSetSendDelayPerByteInSeconds(oSelf, nSendDelayPerByteInSeconds):
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    oSelf.__oDirectHTTPClient.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
+    for oHTTPClient in oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL.values():
+      oHTTPClient.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
   
   @ShowDebugOutput
   def fStop(oSelf):
@@ -365,6 +373,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
           n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
+          nSendDelayPerByteInSeconds = oSelf.nSendDelayPerByteInSeconds,
           bVerifyCertificates = oSelf.__bVerifyCertificates,
           bzCheckHost = oSelf.__bzCheckHost,
         );
@@ -465,6 +474,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           n0zSecureConnectionToProxyTimeoutInSeconds = oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds,
           n0zSecureConnectionToServerTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
           n0zTransactionTimeoutInSeconds = oSelf.__n0zTransactionTimeoutInSeconds,
+          nSendDelayPerByteInSeconds = oSelf.nSendDelayPerByteInSeconds,
           bVerifyCertificates = oSelf.__bVerifyCertificates,
           bzCheckHost = oSelf.__bzCheckHost,
         );

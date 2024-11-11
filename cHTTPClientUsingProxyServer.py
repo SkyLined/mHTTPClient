@@ -56,6 +56,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     n0zSecureConnectionToProxyTimeoutInSeconds = zNotProvided,
     n0zSecureConnectionToServerTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
+    nSendDelayPerByteInSeconds = 0,
     bVerifyCertificates = True,
     bzCheckHost = zNotProvided,
   ):
@@ -111,6 +112,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       "%s.__oTerminatedLock" % oSelf.__class__.__name__,
       bLocked = True
     );
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
     
     oSelf.fAddEvents(
       "proxy host invalid",
@@ -155,6 +157,15 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
   @property
   def bTerminated(oSelf):
     return not oSelf.__oTerminatedLock.bLocked;
+  
+  def fSetSendDelayPerByteInSeconds(oSelf, nSendDelayPerByteInSeconds):
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    for oConnection in oSelf.__aoConnectionsToProxyNotConnectedToAServer:
+      oConnection.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    for oConnection in oSelf.__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.values():
+      oConnection.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    for oConnection in oSelf.__doExternalizedConnectionToServerThroughProxy_by_sbProtocolHostPort.values():
+      oConnection.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
   
   @ShowDebugOutput
   def fStop(oSelf):

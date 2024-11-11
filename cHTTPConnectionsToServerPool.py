@@ -29,6 +29,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
     *,
     u0zMaxNumberOfConnectionsToServer = zNotProvided,
     o0SSLContext = None,
+    nSendDelayPerByteInSeconds = 0,
     bzCheckHost = zNotProvided,
   ):
     oSelf.__oServerBaseURL = oServerBaseURL;
@@ -53,6 +54,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
       "%s.__oTerminatedLock" % oSelf.__class__.__name__,
       bLocked = True
     );
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
     
     oSelf.fAddEvents(
       "server host invalid",
@@ -87,6 +89,13 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
   def uConnectionsCount(oSelf):
     return len(oSelf.__aoConnections) + len(oSelf.__aoExternallyManagedConnections);
   
+  def fSetSendDelayPerByteInSeconds(oSelf, nSendDelayPerByteInSeconds):
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    for oConnection in oSelf.__aoConnections:
+      oConnection.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    for oConnection in oSelf.__aoExternallyManagedConnections:
+      oConnection.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+
 #  @property
 #  def aoConnections(oSelf):
 #    oSelf.__oConnectionsPropertyLock.fAcquire();
@@ -372,6 +381,7 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
         o0SSLContext = oSelf.__o0SSLContext if bSecureConnection else None,
         bzCheckHost = fxzGetFirstProvidedValueIfAny(bzCheckHost, oSelf.__bzCheckHost),
         n0zSecureTimeoutInSeconds = n0zSecureTimeoutInSeconds,
+        nSendDelayPerByteInSeconds = oSelf.nSendDelayPerByteInSeconds,
         f0HostInvalidCallback = lambda sbHost: oSelf.fFireCallbacks(
           "server host invalid",
           sbHost = sbHost,

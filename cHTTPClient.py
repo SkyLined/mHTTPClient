@@ -40,6 +40,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     n0zConnectTimeoutInSeconds = zNotProvided,
     n0zSecureTimeoutInSeconds = zNotProvided,
     n0zTransactionTimeoutInSeconds = zNotProvided,
+    nSendDelayPerByteInSeconds = 0,
     bVerifyCertificates = True,
     bzCheckHost = zNotProvided,
     dsbSpoofedHost_by_sbHost = {},
@@ -74,6 +75,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     
     oSelf.__bStopping = False;
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
     
     oSelf.fAddEvents(
       "spoofing server host",
@@ -102,6 +104,11 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   @property
   def bTerminated(oSelf):
     return not oSelf.__oTerminatedLock.bLocked;
+  
+  def fSetSendDelayPerByteInSeconds(oSelf, nSendDelayPerByteInSeconds):
+    oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
+    for oHTTPConnectionsToServerPool in oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.values():
+      oHTTPConnectionsToServerPool.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
   
   @ShowDebugOutput
   def fStop(oSelf):
@@ -264,6 +271,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServer,
         o0SSLContext = o0SSLContext,
         bzCheckHost = oSelf.__bzCheckHost,
+        nSendDelayPerByteInSeconds = oSelf.nSendDelayPerByteInSeconds,
       );
       oConnectionsToServerPool.fAddCallbacks({
         "server host invalid": lambda oConnectionsToServerPool, sbHost: oSelf.fFireCallbacks(
