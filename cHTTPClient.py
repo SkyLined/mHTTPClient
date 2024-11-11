@@ -82,11 +82,15 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       
       "resolving server hostname", "resolving server hostname failed", "server hostname resolved to ip address",
       
-      "connecting to server ip address", "connecting to server ip address failed",
-      "connecting to server failed", "connection to server created", "connection to server terminated",
+      "connecting to server", "connecting to server failed",
+      "connection to server created", "connection to server terminated",
+      
+      "securing connection to server", "securing connection to server failed", "connection to server secured",
       
       "bytes written", "bytes read",
-      "request sent", "response received", "request sent and response received",
+      "sending request", "request sent",
+      "receiving response", "response received",
+      "request sent and receiving response", "request sent and response received",
       
       "terminated",
     );
@@ -240,9 +244,9 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         ),
         sbHost = sbSpoofedHost;
       oServerBaseURL = oURL.oBase.foClone(sbzHost = sbHost);
-      oConnectionsToServerPool = oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
-      if oConnectionsToServerPool:
-        return oConnectionsToServerPool;
+      o0ConnectionsToServerPool = oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
+      if o0ConnectionsToServerPool:
+        return o0ConnectionsToServerPool;
       # No connections to the server have been made before: create a new Pool.
       if oURL.bSecure and oSelf.__o0CertificateStore:
         if oSelf.__bVerifyCertificates:
@@ -280,29 +284,50 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
           sbIPAddress = sbIPAddress,
           sCanonicalName = sCanonicalName,
         ),
-        "connecting to server ip address": lambda oConnectionsToServerPool, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
-          "connecting to server ip address",
+        "connecting to server": lambda oConnectionsToServerPool, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
+          "connecting to server",
           sbHost = sbHost,
           sbIPAddress = sbIPAddress,
           uPortNumber = uPortNumber,
         ),
-        "connecting to server ip address failed": lambda oConnectionsToServerPool, oException, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
-          "connecting to server ip address failed",
-          oException = oException,
-          sbHost = sbHost,
-          sbIPAddress = sbIPAddress,
-          uPortNumber = uPortNumber,
-        ),
-        "connecting to server failed": lambda oConnectionsToServerPool, sbHost, uPortNumber, oException: oSelf.fFireCallbacks(
+        "connecting to server failed": lambda oConnectionsToServerPool, oException, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
           "connecting to server failed",
+          oException = oException,
+          sbHost = sbHost,
+          sbIPAddress = sbIPAddress,
+          uPortNumber = uPortNumber,
+        ),
+        "connection to server created": lambda oConnectionsToServerPool, sbHost, uPortNumber, sbIPAddress, oConnection: oSelf.fFireCallbacks(
+          "connection to server created",
           sbHost = sbHost,
           uPortNumber = uPortNumber,
-          oException = oException,
-        ),
-        "connection to server created": lambda oConnectionsToServerPool, oConnection, sbHost: oSelf.fFireCallbacks(
-          "connection to server created",
+          sbIPAddress = sbIPAddress,
           oConnection = oConnection,
+        ),
+        "securing connection to server": lambda oConnectionsToServerPool, sbHost, sbIPAddress, uPortNumber, oConnection, oSSLContext: oSelf.fFireCallbacks(
+          "securing connection to server",
           sbHost = sbHost,
+          sbIPAddress = sbIPAddress,
+          uPortNumber = uPortNumber,
+          oConnection = oConnection,
+          oSSLContext = oSSLContext,
+        ),
+        "securing connection to server failed": lambda oConnectionsToServerPool, oException, sbHost, sbIPAddress, uPortNumber, oConnection, oSSLContext: oSelf.fFireCallbacks(
+          "securing connection to server failed",
+          oException = oException,
+          sbHost = sbHost,
+          sbIPAddress = sbIPAddress,
+          uPortNumber = uPortNumber,
+          oConnection = oConnection,
+          oSSLContext = oSSLContext,
+        ),
+        "connection to server secured": lambda oConnectionsToServerPool, sbHost, sbIPAddress, uPortNumber, oConnection, oSSLContext: oSelf.fFireCallbacks(
+          "connection to server secured",
+          sbHost = sbHost,
+          sbIPAddress = sbIPAddress,
+          uPortNumber = uPortNumber,
+          oConnection = oConnection,
+          oSSLContext = oSSLContext,
         ),
         "bytes read": lambda oConnectionsToServerPool, oConnection, sbBytesRead: oSelf.fFireCallbacks(
           "bytes read",
@@ -312,15 +337,29 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         "bytes written": lambda oConnectionsToServerPool, oConnection, sbBytesWritten: oSelf.fFireCallbacks(
           "bytes written", oConnection, sbBytesWritten,
         ),
+        "sending request": lambda oConnectionsToServerPool, oConnection, oRequest: oSelf.fFireCallbacks(
+          "sending request",
+          oConnection = oConnection,
+          oRequest = oRequest,
+        ),
         "request sent": lambda oConnectionsToServerPool, oConnection, oRequest: oSelf.fFireCallbacks(
           "request sent",
           oConnection = oConnection,
           oRequest = oRequest,
         ),
+        "receiving response": lambda oConnectionsToServerPool, oConnection: oSelf.fFireCallbacks(
+          "receiving response",
+          oConnection = oConnection,
+        ),
         "response received": lambda oConnectionsToServerPool, oConnection, oResponse: oSelf.fFireCallbacks(
           "response received",
           oConnection = oConnection,
           oResponse = oResponse,
+        ),
+        "request sent and receiving response": lambda oConnectionsToServerPool, oConnection, oRequest: oSelf.fFireCallbacks(
+          "request sent and receiving response",
+          oConnection = oConnection,
+          oRequest = oRequest,
         ),
         "request sent and response received": lambda oConnectionsToServerPool, oConnection, oRequest, oResponse: oSelf.fFireCallbacks(
           "request sent and response received",

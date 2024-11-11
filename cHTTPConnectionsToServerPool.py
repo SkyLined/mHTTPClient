@@ -59,12 +59,15 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
       
       "resolving server hostname", "resolving server hostname failed", "server hostname resolved to ip address",
       
-      "connecting to server ip address", "connecting to server ip address failed",
-      "connecting to server failed", "connection to server created",
+      "connecting to server", "connecting to server failed",
+      "connection to server created",
+      
+      "securing connection to server", "securing connection to server failed", "connection to server secured",
       
       "bytes written", "bytes read",
-      "request sent", "response received",
-      "request sent and response received",
+      "sending request", "request sent",
+      "receiving response", "response received",
+      "request sent and receiving response", "request sent and response received",
       
       "connection to server terminated",
       
@@ -388,17 +391,49 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
           sCanonicalName = sCanonicalName,
         ),
         f0ConnectingToIPAddressCallback = lambda sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
-          "connecting to server ip address",
+          "connecting to server",
           sbHost = sbHost,
           uPortNumber = uPortNumber,
           sbIPAddress = sbIPAddress,
         ),
         f0ConnectingToIPAddressFailedCallback = lambda oException, sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
-          "connecting to server ip address failed",
+          "connecting to server failed",
           oException = oException,
           sbHost = sbHost,
           uPortNumber = uPortNumber,
           sbIPAddress = sbIPAddress,
+        ),
+        f0ConnectedToIPAddressCallback = lambda sbHost, uPortNumber, sbIPAddress, oConnection: oSelf.fFireCallbacks(
+          "connection to server created",
+          sbHost = sbHost,
+          uPortNumber = uPortNumber,
+          sbIPAddress = sbIPAddress,
+          oConnection = oConnection,
+        ),
+        f0SecuringConnectionCallback = lambda sbHost, uPortNumber, sbIPAddress, oConnection, oSSLContext: oSelf.fFireCallbacks(
+          "securing connection to server",
+          sbHost = sbHost,
+          uPortNumber = uPortNumber,
+          sbIPAddress = sbIPAddress,
+          oConnection = oConnection,
+          oSSLContext = oSSLContext,
+        ),
+        f0SecuringConnectionFailedCallback = lambda oException, sbHost, uPortNumber, sbIPAddress, oConnection, oSSLContext: oSelf.fFireCallbacks(
+          "securing connection to server failed",
+          oException = oException,
+          sbHost = sbHost,
+          uPortNumber = uPortNumber,
+          sbIPAddress = sbIPAddress,
+          oConnection = oConnection,
+          oSSLContext = oSSLContext,
+        ),
+        f0ConnectionSecuredCallback = lambda sbHost, uPortNumber, sbIPAddress, oConnection, oSSLContext: oSelf.fFireCallbacks(
+          "connection to server secured",
+          sbHost = sbHost,
+          uPortNumber = uPortNumber,
+          sbIPAddress = sbIPAddress,
+          oConnection = oConnection,
+          oSSLContext = oSSLContext,
         ),
       );
     except cHTTPConnection.tcExceptions as oException:
@@ -407,12 +442,6 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
         oSelf.__uPendingConnects -= 1;
       finally:
         oSelf.__oConnectionsPropertyLock.fRelease();
-      oSelf.fFireCallbacks(
-        "connecting to server failed",
-        oException = oException,
-        sbHost = oSelf.__oServerBaseURL.sbHost,
-        uPortNumber = oSelf.__oServerBaseURL.uPortNumber,
-      );
       raise;
     # Start a transaction to prevent other threads from using it:
     oConnection.fStartTransaction(
@@ -433,22 +462,26 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
       "bytes read": lambda oConnection, sbBytesRead: oSelf.fFireCallbacks(
         "bytes read", oConnection, sbBytesRead,
       ),
+      "sending request": lambda oConnection, oRequest: oSelf.fFireCallbacks(
+        "sending request", oConnection, oRequest,
+      ),
       "request sent": lambda oConnection, oRequest: oSelf.fFireCallbacks(
-        "request sent", oConnection, oRequest
+        "request sent", oConnection, oRequest,
+      ),
+      "receiving response": lambda oConnection: oSelf.fFireCallbacks(
+        "receiving response", oConnection,
       ),
       "response received": lambda oConnection, oResponse: oSelf.fFireCallbacks(
-        "response received", oConnection, oResponse
+        "response received", oConnection, oResponse,
+      ),
+      "request sent and receiving response": lambda oConnection, oRequest: oSelf.fFireCallbacks( 
+        "request sent and receiving response", oConnection, oRequest,
       ),
       "request sent and response received": lambda oConnection, oRequest, oResponse: oSelf.fFireCallbacks(
-        "request sent and response received", oConnection, oRequest, oResponse
+        "request sent and response received", oConnection, oRequest, oResponse,
       ),
       "terminated": oSelf.__fHandleTerminatedCallbackFromConnection,
     });
-    oSelf.fFireCallbacks(
-      "connection to server created",
-      oConnection = oConnection,
-      sbHost = oSelf.__oServerBaseURL.sbHost,
-    );
     return oConnection;
   
   @ShowDebugOutput
