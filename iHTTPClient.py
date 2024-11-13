@@ -69,6 +69,7 @@ class iHTTPClient(cWithCallbacks):
     sb0Body = None,
     s0Data = None,
     a0sbBodyChunks = None,
+    bAddContentLengthHeader = False,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -88,6 +89,7 @@ class iHTTPClient(cWithCallbacks):
       sb0Body = sb0Body,
       s0Data = s0Data,
       a0sbBodyChunks = a0sbBodyChunks,
+      bAddContentLengthHeader = bAddContentLengthHeader,
       u0zMaxStatusLineSize = u0zMaxStatusLineSize,
       u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
       u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
@@ -114,6 +116,7 @@ class iHTTPClient(cWithCallbacks):
     sb0Body = None,
     s0Data = None,
     a0sbBodyChunks = None,
+    bAddContentLengthHeader = False,
     u0zMaxStatusLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
@@ -132,7 +135,8 @@ class iHTTPClient(cWithCallbacks):
       "o0zHeaders": (o0zHeaders, cHTTPHeaders, None, zNotProvided),
       "sb0Body": (sb0Body, bytes, None),
       "s0Data": (s0Data, str, None),
-      "a0sbBodyChunks": (s0Data, [bytes], None),
+      "a0sbBodyChunks": (a0sbBodyChunks, [bytes], None),
+      "bAddContentLengthHeader": (bAddContentLengthHeader, bool),
       "u0zMaxStatusLineSize": (u0zMaxStatusLineSize, int, None, zNotProvided),
       "u0zMaxHeaderNameSize": (u0zMaxHeaderNameSize, int, None, zNotProvided),
       "u0zMaxHeaderValueSize": (u0zMaxHeaderValueSize, int, None, zNotProvided),
@@ -161,6 +165,7 @@ class iHTTPClient(cWithCallbacks):
         sb0Body = sb0Body,
         s0Data = s0Data,
         a0sbBodyChunks = a0sbBodyChunks,
+        bAddContentLengthHeader = bAddContentLengthHeader,
       );
       if o0OriginalRequest is None:
         o0OriginalRequest = oRequest;
@@ -229,8 +234,10 @@ class iHTTPClient(cWithCallbacks):
     sbzMethod = zNotProvided,
     sbzVersion = zNotProvided,
     o0zHeaders = zNotProvided,
-    sb0Body = None, s0Data = None,
+    sb0Body = None,
+    s0Data = None,
     a0sbBodyChunks = None,
+    bAddContentLengthHeader = False,
     o0AdditionalHeaders = None,
   ):
     fAssertTypes({
@@ -241,6 +248,7 @@ class iHTTPClient(cWithCallbacks):
       sb0Body: (sb0Body, bytes, None),
       s0Data: (s0Data, str, None),
       a0sbBodyChunks: (s0Data, [bytes], None),
+      bAddContentLengthHeader: (bAddContentLengthHeader, bool),
       o0AdditionalHeaders: (o0AdditionalHeaders, cHTTPHeaders, None),
     });
     o0ProxyServerURL = oSelf.fo0GetProxyServerURLForURL(oURL);
@@ -263,6 +271,7 @@ class iHTTPClient(cWithCallbacks):
       sb0Body = sb0Body,
       s0Data = s0Data,
       a0sbBodyChunks = a0sbBodyChunks,
+      bAddContentLengthHeader = bAddContentLengthHeader,
       o0AdditionalHeaders = o0AdditionalHeaders,
     );
     if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Host"):
