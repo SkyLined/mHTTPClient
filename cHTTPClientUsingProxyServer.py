@@ -465,33 +465,33 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         uPortNumber = uPortNumber,
         oConnection = oConnection,
       ),
-      f0SecuringConnectionCallback = lambda sbHost, sbIPAddress, uPortNumber, oConnection, o0SSLContext: oSelf.fFireCallbacks(
+      f0SecuringConnectionCallback = lambda sbHost, sbIPAddress, uPortNumber, oConnection, oSSLContext: oSelf.fFireCallbacks(
         "securing connection to proxy",
         oProxyServerURL = oSelf.oProxyServerURL,
         sbHost = sbHost,
         sbIPAddress = sbIPAddress,
         uPortNumber = uPortNumber,
         oConnection = oConnection,
-        oSSLContext = o0SSLContext,
+        oSSLContext = oSSLContext,
       ),
-      f0SecuringConnectionFailedCallback = lambda oException, sbHost, sbIPAddress, uPortNumber, oConnection, o0SSLContext: oSelf.fFireCallbacks(
+      f0SecuringConnectionFailedCallback = lambda oException, sbHost, sbIPAddress, uPortNumber, oConnection, oSSLContext: oSelf.fFireCallbacks(
         "securing connection to proxy failed",
         oProxyServerURL = oSelf.oProxyServerURL,
         sbHost = sbHost,
         sbIPAddress = sbIPAddress,
         uPortNumber = uPortNumber,
         oConnection = oConnection,
-        oSSLContext = o0SSLContext,
+        oSSLContext = oSSLContext,
         oException = oException,
       ),
-      f0ConnectionSecuredCallback = lambda sbHost, sbIPAddress, uPortNumber, oConnection, o0SSLContext: oSelf.fFireCallbacks(
+      f0ConnectionSecuredCallback = lambda sbHost, sbIPAddress, uPortNumber, oConnection, oSSLContext: oSelf.fFireCallbacks(
         "secured connection to proxy",
         oProxyServerURL = oSelf.oProxyServerURL,
         sbHost = sbHost,
         sbIPAddress = sbIPAddress,
         uPortNumber = uPortNumber,
         oConnection = oConnection,
-        oSSLContext = o0SSLContext,
+        oSSLContext = oSSLContext,
       ),
     );
     oConnection.fStartTransaction(
