@@ -244,24 +244,29 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     
   @ShowDebugOutput
   def __foGetConnectionsToServerPoolForURL(oSelf, oURL):
-    # We will reuse connections to the same server if possible. Servers are identified by host name, port and whether
-    # or not the connection is secure. We may want to change this to identification by IP address rather than host name.
+    # We may need to spoof the host, which means connecting to the spoofed host
+    # but otherwise acting as if it was the original (e.g. for SSL context and `Host`
+    # header. We will create a `oServerBaseURL` that uniquely identifies a server using
+    # the protocol, (spoofed) host and port, which will be used for connecting sockets.
+    oServerBaseURL = oURL.oBase;
+    sbHost = oURL.sbHost.lower();
+    if sbHost in oSelf.dsbSpoofedHost_by_sbHost:
+      sbSpoofedHost = oSelf.dsbSpoofedHost_by_sbHost[sbHost];
+      oSelf.fFireCallbacks(
+        "spoofing server host",
+        sbHost = sbHost,
+        sbSpoofedHost = sbSpoofedHost,
+      ),
+      sbHost = sbSpoofedHost;
+      oServerBaseURL.sbHost = sbSpoofedHost;
+    # We will use a single cHTTPConnectionsToServerPool instances for each server.
+    # Servers are identified by host name, port and whether or not the connection is secure.
+    # We may want to change this to identification by IP address rather than host name.
+    # To prevent two threads from creating a new cHTTPConnectionsToServerPool instance for
+    # the same server, getting an existing one or creating a new one is an atomic operation
+    # through the 
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      # We may need to spoof the host, which means connecting to the spoofed host
-      # but otherwise acting as if it was the original (e.g. for SSL context and `Host`
-      # header. We will create a `oServerBaseURL` that uniquely identifies a server using
-      # the protocol, (spoofed) host and port, which will be used for connecting sockets.
-      sbHost = oURL.sbHost.lower();
-      if sbHost in oSelf.dsbSpoofedHost_by_sbHost:
-        sbSpoofedHost = oSelf.dsbSpoofedHost_by_sbHost[sbHost];
-        oSelf.fFireCallbacks(
-          "spoofing server host",
-          sbHost = sbHost,
-          sbSpoofedHost = sbSpoofedHost,
-        ),
-        sbHost = sbSpoofedHost;
-      oServerBaseURL = oURL.oBase.foClone(sbzHost = sbHost);
       o0ConnectionsToServerPool = oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL.get(oServerBaseURL.sbBase);
       if o0ConnectionsToServerPool:
         return o0ConnectionsToServerPool;
