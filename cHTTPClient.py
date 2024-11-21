@@ -406,9 +406,9 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         "terminated": oSelf.__fHandleTerminatedCallbackForConnectionsToServerPool,
       });
       oSelf.__doHTTPConnectionsToServerPool_by_sbBaseURL[oServerBaseURL.sbBase] = oConnectionsToServerPool;
-      return oConnectionsToServerPool;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
+    return oConnectionsToServerPool;
   
   @ShowDebugOutput
   def __fHandleTerminatedCallbackForConnectionsToServerPool(oSelf, oConnectionsToServerPool):
