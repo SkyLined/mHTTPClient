@@ -277,7 +277,9 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
             oURL.sbHost,
           );
         else:
-          o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
+          o0SSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerificationForHost(
+            oURL.sbHost,
+          );
       else:
         # The URL may either be "http://" or we will not be able to create secure connections when asked.
         o0SSLContext = None;

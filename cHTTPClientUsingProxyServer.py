@@ -93,7 +93,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
           oProxyServerURL.sbHost,
         );
       else:
-        oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
+        oSelf.__o0ProxySSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerificationForHost(
+          oProxyServerURL.sbHost,
+        );
     
     oSelf.__oWaitingForConnectionToBecomeAvailableLock = cLock(
       "%s.__oWaitingForConnectionToBecomeAvailableLock" % oSelf.__class__.__name__,
@@ -683,7 +685,9 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
           oServerBaseURL.sbHost,
         );
       else:
-        oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerification();
+        oSSLContext = oSelf.__o0CertificateStore.foGetClientsideSSLContextWithoutVerificationForHost(
+          oServerBaseURL.sbHost,
+        );
       oSelf.fFireCallbacks(
         "securing connection to server through proxy",
         oProxyServerURL = oSelf.oProxyServerURL,
