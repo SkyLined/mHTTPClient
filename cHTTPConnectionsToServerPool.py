@@ -310,10 +310,10 @@ class cHTTPConnectionsToServerPool(cWithCallbacks):
           u0zMaxNumberOfChunks = u0zMaxNumberOfChunks,
           u0MaxNumberOfChunksBeforeDisconnecting = u0MaxNumberOfChunksBeforeDisconnecting, # disconnect and return response once this many chunks are received.
         );
-        if oRequest.bIndicatesConnectionShouldBeClosed:
+        if oRequest.fbContainsConnectionCloseHeader():
           fShowDebugOutput("Closing connection per client request...");
           oConnection.fDisconnect();
-        elif oResponse.bIndicatesConnectionShouldBeClosed:
+        elif oResponse.fbContainsConnectionCloseHeader():
           fShowDebugOutput("Closing connection per server response...");
           oConnection.fDisconnect();
       finally:
