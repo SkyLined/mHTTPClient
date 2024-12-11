@@ -4,25 +4,16 @@ from .cHTTPClientUsingProxyServer import cHTTPClientUsingProxyServer;
 if os.name == "nt":
   from .cHTTPClientUsingAutomaticProxyServer import cHTTPClientUsingAutomaticProxyServer;
   
-from . import mExceptions;
-# Pass down
-from mHTTPConnection import \
-    cHTTPConnection, \
-    cHTTPHeader, cHTTPHeaders, \
-    cHTTPRequest, cHTTPResponse, \
-    cURL, \
-    fs0GetExtensionForMediaType, fsb0GetMediaTypeForExtension;
+from .mExceptions import (
+  cHTTPClientException,
+  cHTTPClientFailedToConnectToServerThroughProxyException,
+);
 
 __all__ = [
   "cHTTPClient",
+  "cHTTPClientException",
+  "cHTTPClientFailedToConnectToServerThroughProxyException",
   "cHTTPClientUsingProxyServer",
-  "mExceptions",
-  # Pass down from mHTTPConnection
-  "cHTTPConnection",
-  "cHTTPHeader", "cHTTPHeaders", 
-  "cHTTPRequest", "cHTTPResponse",
-  "cURL",
-  "fs0GetExtensionForMediaType", "fsb0GetMediaTypeForExtension",
 ];
 if os.name == "nt":
   __all__.append("cHTTPClientUsingAutomaticProxyServer");

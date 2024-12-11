@@ -40,7 +40,8 @@ try:
   
   import os, sys;
   
-  import mHTTPClient;
+  from mHTTPClient import cHTTPClient;
+  from mHTTPProtocol import cURL;
   
   try:
     import mSSL as m0SSL;
@@ -95,7 +96,7 @@ try:
       assert m0DebugOutput, \
           "m0DebugOutput module is not available";
       # Turn on debugging for various classes, including a few that are not directly exported.
-      import mTCPIPConnection, mHTTPConnection, mHTTPProtocol;
+      import mHTTPClient, mTCPIPConnection, mHTTPConnection, mHTTPProtocol;
       m0DebugOutput.fEnableDebugOutputForModule(mHTTPClient);
       m0DebugOutput.fEnableDebugOutputForModule(mHTTPConnection);
       m0DebugOutput.fEnableDebugOutputForModule(mTCPIPConnection);
@@ -131,9 +132,9 @@ try:
   nEndWaitTimeoutInSeconds = 10;
   sbTestHost = b"localhost";
   
-  oLocalNonSecureURL = mHTTPClient.cURL.foFromBytesString(b"http://%s:28876/local-non-secure" % sbTestHost);
-  oLocalSecureURL = mHTTPClient.cURL.foFromBytesString(b"https://%s:28876/local-secure" % sbTestHost);
-  oProxyServerURL = mHTTPClient.cURL.foFromBytesString(b"https://%s:28876" % sbTestHost);
+  oLocalNonSecureURL = cURL.foFromBytesString(b"http://%s:28876/local-non-secure" % sbTestHost);
+  oLocalSecureURL = cURL.foFromBytesString(b"https://%s:28876/local-secure" % sbTestHost);
+  oProxyServerURL = cURL.foFromBytesString(b"https://%s:28876" % sbTestHost);
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cCertificateStore instance ".ljust(160, "\u2500"));
   
   if m0SSL is not None:
@@ -160,7 +161,7 @@ try:
   if bTestClient is not False:
     from fTestClient import fTestClient;
     oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClient instance ", sPadding = "\u2500");
-    oHTTPClient = mHTTPClient.cHTTPClient(
+    oHTTPClient = cHTTPClient(
       o0zCertificateStore = o0CertificateStore,
       n0zConnectTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
     );

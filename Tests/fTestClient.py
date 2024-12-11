@@ -1,15 +1,18 @@
 import socket, threading;
 
 from mConsole import oConsole;
-from mHTTPConnection.mExceptions import (
-    cHTTPInvalidMessageException,
-    cTCPIPDataTimeoutException,
-    cTCPIPDNSNameCannotBeResolvedException,
-    cTCPIPInvalidAddressException,
-    cTCPIPConnectionDisconnectedException,
-    cTCPIPConnectionRefusedException,
-    cTCPIPConnectionShutdownException,
-    cTCPIPConnectTimeoutException,
+from mHTTPProtocol import (
+  cHTTPInvalidMessageException,
+  cURL,
+);
+from mTCPIPConnection import (
+  cTCPIPDataTimeoutException,
+  cTCPIPDNSNameCannotBeResolvedException,
+  cTCPIPInvalidAddressException,
+  cTCPIPConnectionDisconnectedException,
+  cTCPIPConnectionRefusedException,
+  cTCPIPConnectionShutdownException,
+  cTCPIPConnectTimeoutException,
 );
 from mHTTPProtocol import cURL;
 from mMultiThreading import cThread;

@@ -1,5 +1,3 @@
-import time;
-
 try: # mDebugOutput use is Optional
   from mDebugOutput import ShowDebugOutput, fShowDebugOutput;
 except ModuleNotFoundError as oException:
@@ -8,23 +6,32 @@ except ModuleNotFoundError as oException:
   ShowDebugOutput = lambda fx: fx; # NOP
   fShowDebugOutput = lambda x, s0 = None: x; # NOP
 
-from mMultiThreading import cLock, cWithCallbacks;
-from mHTTPConnection import cHTTPConnection, cHTTPRequest, cHTTPHeaders;
-from mNotProvided import \
-    fbIsProvided, \
-    fxGetFirstProvidedValue, \
-    fxzGetFirstProvidedValueIfAny, \
-    zNotProvided;
+from mMultiThreading import (
+  cLock,
+  cWithCallbacks
+);
+from mHTTPConnection import (
+  cHTTPConnectionsToServerPool,
+);
+from mHTTPProtocol import (
+  cHTTPRequest,
+  cHTTPHeaders,
+);
+from mNotProvided import (
+  fbIsProvided,
+  fxGetFirstProvidedValue,
+  fxzGetFirstProvidedValueIfAny,
+  zNotProvided,
+);
 try: # SSL support is optional.
   import mSSL as m0SSL;
 except:
   m0SSL = None; # No SSL support
 
 from .iHTTPClient import iHTTPClient;
-from .mExceptions import \
-    cHTTPMaxConnectionsToServerReachedException, \
-    cHTTPClientFailedToConnectToServerThroughProxyException, \
-    cTCPIPConnectionCannotBeUsedConcurrentlyException;
+from .mExceptions import (
+  cHTTPClientFailedToConnectToServerThroughProxyException,
+);
 
 # To turn access to data store in multiple variables into a single transaction, we will create locks.
 # These locks should only ever be locked for a short time; if it is locked for too long, it is considered a "deadlock"
@@ -702,7 +709,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
           n0zTimeoutInSeconds = oSelf.__n0zSecureConnectionToServerTimeoutInSeconds,
           bzCheckHost = oSelf.__bzCheckHost if oSelf.__bVerifyCertificates else False,
         );
-      except m0SSL.mExceptions.cSSLException as oException:
+      except m0SSL.cSSLException as oException:
         oSelf.fFireCallbacks(
           "securing connection to server through proxy failed",
           oProxyServerURL = oSelf.oProxyServerURL,

@@ -6,8 +6,12 @@ except ModuleNotFoundError as oException:
   ShowDebugOutput = lambda fx: fx; # NOP
   fShowDebugOutput = lambda x, s0 = None: x; # NOP
 
-from mHTTPConnection import cHTTPConnection, cURL;
-from mHTTPProtocol import cHTTPHeaders;
+from mHTTPProtocol import (
+  cHTTPHeaders,
+  cHTTPInvalidURLException,
+  cHTTPRequest,
+  cURL,
+);
 from mMultiThreading import cWithCallbacks;
 from mNotProvided import \
     fAssertTypes, \
@@ -209,7 +213,7 @@ class iHTTPClient(cWithCallbacks):
           oURL = cURL.foFromBytesString(sbRedirectToURL);
         else:
           break;
-      except cURL.cHTTPInvalidURLException:
+      except cHTTPInvalidURLException:
         break;
       uMaximumNumberOfRedirectsToFollow -= 1;
       # 303 always changes the method for the next request to GET. This behavior is undefined
@@ -260,7 +264,7 @@ class iHTTPClient(cWithCallbacks):
         o0Header = o0zHeaders.fo0GetUniqueHeaderForName(sbName);
         assert o0Header is None, \
             "%s header is not implemented!" % repr(o0Header.sbName);
-    oRequest = cHTTPConnection.cHTTPRequest(
+    oRequest = cHTTPRequest(
       # When sending requests to a proxy, secure requests are forwarded directly to the server (after an initial
       # CONNECT request), so the URL in the request must be relative. Non-secure requests are made to the proxy,
       # which most have the absolute URL.
@@ -308,8 +312,3 @@ class iHTTPClient(cWithCallbacks):
   
   def __str__(oSelf):
     return "%s#%X{%s}" % (oSelf.__class__.__name__, id(oSelf), ", ".join(oSelf.fasGetDetails()));
-
-from .mExceptions import acExceptions;
-for cException in acExceptions:
-  setattr(iHTTPClient, cException.__name__, cException);
-
