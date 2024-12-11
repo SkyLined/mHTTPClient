@@ -419,20 +419,22 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
           bzCheckHost = oSelf.__bzCheckHost,
         );
         oClient.fAddCallbacks({
-          "server host invalid": lambda oClient, *, sbHost: oSelf.fFireCallbacks(
+          "server host invalid": lambda oClient, *, sbHost, oException: oSelf.fFireCallbacks(
             "server host invalid",
             oClient = oClient,
             sbHost = sbHost,
+            oException = oException,
           ),
           "resolving server hostname to ip address": lambda oClient, *, sbHostname: oSelf.fFireCallbacks(
             "resolving server hostname to ip address",
             oClient = oClient,
             sbHostname = sbHostname,
           ),
-          "resolving server hostname to ip address failed": lambda oClient, *, sbHostname: oSelf.fFireCallbacks(
+          "resolving server hostname to ip address failed": lambda oClient, *, sbHostname, oException: oSelf.fFireCallbacks(
             "resolving server hostname to ip address failed",
             oClient = oClient,
             sbHostname = sbHostname,
+            oException = oException,
           ),
           "resolved server hostname to ip address": lambda oClient, *, sbHostname, sbIPAddress, sCanonicalName: oSelf.fFireCallbacks(
             "resolved server hostname to ip address",

@@ -294,17 +294,19 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
         nSendDelayPerByteInSeconds = oSelf.nSendDelayPerByteInSeconds,
       );
       oConnectionsToServerPool.fAddCallbacks({
-        "server host invalid": lambda oConnectionsToServerPool, *, sbHost: oSelf.fFireCallbacks(
+        "server host invalid": lambda oConnectionsToServerPool, *, sbHost, oException: oSelf.fFireCallbacks(
           "server host invalid",
           sbHost = sbHost,
+          oException = oException,
         ),
         "resolving server hostname to ip address": lambda oConnectionsToServerPool, *, sbHostname: oSelf.fFireCallbacks(
           "resolving server hostname to ip address",
           sbHostname = sbHostname,
         ),
-        "resolving server hostname to ip address failed": lambda oConnectionsToServerPool, *, sbHostname: oSelf.fFireCallbacks(
+        "resolving server hostname to ip address failed": lambda oConnectionsToServerPool, *, sbHostname, oException: oSelf.fFireCallbacks(
           "resolving server hostname to ip address failed",
           sbHostname = sbHostname,
+          oException = oException,
         ),
         "resolved server hostname to ip address": lambda oConnectionsToServerPool, *, sbHostname, sbIPAddress, sCanonicalName: oSelf.fFireCallbacks(
           "resolved server hostname to ip address",
