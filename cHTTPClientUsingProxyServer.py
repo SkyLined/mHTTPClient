@@ -131,6 +131,134 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       bzCheckHost = oSelf.__bzCheckProxyHost,
       nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds,
     );
+    oSelf.__oConnectionsToProxyPool.fAddCallbacks({
+      "server host invalid": lambda oConnectionsToProxyPool, *, sbHost, oException: oSelf.fFireCallbacks(
+        "proxy host invalid",
+        sbHost = sbHost,
+        oException = oException,
+      ),
+      "resolving server hostname to ip address": lambda oConnectionsToProxyPool, *, sbHostname: oSelf.fFireCallbacks(
+        "resolving proxy hostname to ip address",
+        sbHostname = sbHostname,
+      ),
+      "resolving server hostname to ip address failed": lambda oConnectionsToProxyPool, *, sbHostname, oException: oSelf.fFireCallbacks(
+        "resolving proxy hostname to ip address failed",
+        sbHostname = sbHostname,
+        oException = oException,
+      ),
+      "resolved server hostname to ip address": lambda oConnectionsToProxyPool, *, sbHostname, sbIPAddress, sCanonicalName: oSelf.fFireCallbacks(
+        "resolved proxy hostname to ip address",
+        sbHostname = sbHostname,
+        sbIPAddress = sbIPAddress,
+        sCanonicalName = sCanonicalName,
+      ),
+      "connecting to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
+        "connecting to proxy",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = sbIPAddress,
+      ),
+      "connecting to server failed": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oException: oSelf.fFireCallbacks(
+        "connecting to proxy failed",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = sbIPAddress,
+        oException = oException,
+      ),
+      "created connection to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oConnection: oSelf.fFireCallbacks(
+        "created connection to proxy",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = sbIPAddress,
+        oConnection = oConnection,
+      ),
+      "terminated connection to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oConnection: oSelf.fFireCallbacks(
+        "terminated connection to proxy",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = oConnection.sbRemoteIPAddress,
+        oConnection = oConnection,
+      ),
+      "securing connection to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oConnection, oSSLContext: oSelf.fFireCallbacks(
+        "securing connection to proxy",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = sbIPAddress,
+        oConnection = oConnection,
+        oSSLContext = oSSLContext,
+      ),
+      "securing connection to server failed": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oConnection, oSSLContext, oException: oSelf.fFireCallbacks(
+        "securing connection to proxy failed",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = sbIPAddress,
+        oConnection = oConnection,
+        oSSLContext = oSSLContext,
+        oException = oException,
+      ),
+      "secured connection to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oConnection, oSSLContext: oSelf.fFireCallbacks(
+        "secured connection to proxy",
+        sbHost = sbHost,
+        uPortNumber = uPortNumber,
+        sbIPAddress = sbIPAddress,
+        oConnection = oConnection,
+        oSSLContext = oSSLContext,
+      ),
+      "read bytes": lambda oConnectionsToProxyPool, *, oConnection, sbBytes: oSelf.fFireCallbacks(
+        "read bytes",
+        oConnection = oConnection,
+        sbBytes = sbBytes,
+      ),
+      "wrote bytes": lambda oConnectionsToProxyPool, *, oConnection, sbBytes: oSelf.fFireCallbacks(
+        "wrote bytes",
+        oConnection = oConnection,
+        sbBytes = sbBytes,
+      ),
+      "sending request to server": lambda oConnectionsToProxyPool, *, oConnection, oRequest: oSelf.fFireCallbacks(
+        "sending request to proxy",
+        oConnection = oConnection,
+        oRequest = oRequest,
+      ),
+      "sending request to server failed": lambda oConnectionsToProxyPool, *, oConnection, oRequest, oException: oSelf.fFireCallbacks(
+        "sending request to proxy failed",
+        oConnection = oConnection,
+        oRequest = oRequest,
+        oException = oException,
+      ),
+      "sent request to server": lambda oConnectionsToProxyPool, *, oConnection, oRequest: oSelf.fFireCallbacks(
+        "sent request to proxy",
+        oConnection = oConnection,
+        oRequest = oRequest,
+      ),
+      "receiving response from server": lambda oConnectionsToProxyPool, *, oConnection, o0Request: oSelf.fFireCallbacks(
+        "receiving response from proxy",
+        oConnection = oConnection,
+        o0Request = o0Request,
+      ),
+      "receiving response from server failed": lambda oConnectionsToProxyPool, *, oConnection, o0Request, oException: oSelf.fFireCallbacks(
+        "receiving response from proxy failed",
+        oConnection = oConnection,
+        o0Request = o0Request,
+        oException = oException,
+      ),
+      "received response from server": lambda oConnectionsToProxyPool, *, oConnection, o0Request, oResponse: oSelf.fFireCallbacks(
+        "received response from proxy",
+        oConnection = oConnection,
+        o0Request = o0Request,
+        oResponse = oResponse,
+      ),
+      "received out-of-band data from server": lambda oConnectionsToProxyPool, *, oConnection, sbOutOfBandData: oSelf.fFireCallbacks(
+        "received out-of-band data from proxy",
+        oConnection = oConnection,
+        sbOutOfBandData = sbOutOfBandData,
+      ),
+      "terminated": lambda oConnectionsToProxyPool: (
+          fShowDebugOutput("Terminated."),
+          oSelf.__oTerminatedLock.fRelease(),
+          oSelf.fFireCallbacks("terminated"),
+      ),
+    });
+
     oSelf.__oReservedConnectionsToServersThroughProxyPropertyLock = cLock(
       "%s.__oReservedConnectionsToServersThroughProxyPropertyLock" % oSelf.__class__.__name__,
     );
@@ -209,18 +337,12 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         return fShowDebugOutput("Already stopping.");
       fShowDebugOutput("Stopping...");
       oSelf.__bStopping = True;
-      aoConnectionsThatCanBeStopped = oSelf.__faoGetAllNonExternalConnections();
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
     fShowDebugOutput("Stopping connections to proxy server...");
-    if len(aoConnectionsThatCanBeStopped) == 0:
-      # We stopped when there were no connections: we are terminated.
-      fShowDebugOutput("Terminated.");
-      oSelf.__oTerminatedLock.fRelease();
-      oSelf.fFireCallbacks("terminated");
-    else:
-      for oConnection in aoConnectionsThatCanBeStopped:
-        oConnection.fStop();
+    # Once the connections to server pool instance terminates,
+    # we will terminate too.
+    oSelf.__oConnectionsToProxyPool.fStop();
   
   @ShowDebugOutput
   def fTerminate(oSelf):
