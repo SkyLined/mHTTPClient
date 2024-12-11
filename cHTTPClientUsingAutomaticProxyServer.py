@@ -152,6 +152,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       "securing connection to server failed",
       "secured connection to server",
       
+      "received out-of-band data from server",
+      
       "sending request to server",
       "sending request to server failed",
       "sent request to server",
@@ -179,6 +181,12 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       "securing connection to server through proxy",
       "securing connection to server through proxy failed",
       "secured connection to server through proxy",
+      
+      "received out-of-band data from proxy",
+      
+      "sending request to proxy",
+      "sending request to proxy failed",
+      "sent request to proxy",
       
       "receiving response from proxy",
       "receiving response from proxy failed",
@@ -492,6 +500,11 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             oConnection = oConnection,
             oSSLContext = oSSLContext,
           ),
+          "received out-of-band data from server": lambda oClient, *, oConnection, sbOutOfBandData: oSelf.fFireCallbacks(
+            "received out-of-band data from server",
+            oConnection = oConnection,
+            sbOutOfBandData = sbOutOfBandData,
+          ),
           "sending request to server": lambda oClient, *, oConnection, oRequest: oSelf.fFireCallbacks(
             "sending request to server",
             oClient = oClient,
@@ -631,6 +644,11 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             oClient = oClient,
             oConnection = oConnection,
             oSSLContext = oSSLContext,
+          ),
+          "received out-of-band data from proxy": lambda oClient, *, oConnection, sbOutOfBandData: oSelf.fFireCallbacks(
+            "received out-of-band data from proxy",
+            oConnection = oConnection,
+            sbOutOfBandData = sbOutOfBandData,
           ),
           # Send request to proxy
           "sending request to proxy": lambda oClient, *, oConnection, oRequest: oSelf.fFireCallbacks(

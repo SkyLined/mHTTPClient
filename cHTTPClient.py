@@ -96,14 +96,16 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       
       "read bytes",
       "wrote bytes",
-
+      
       "sending request to server",
       "sending request to server failed",
       "sent request to server",
-
+      
       "receiving response from server",
       "receiving response from server failed", 
       "received response from server",
+      
+      "received out-of-band data from server",
       
       "terminated",
     );
@@ -371,6 +373,11 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
           "wrote bytes",
           oConnection = oConnection,
           sbBytes = sbBytes,
+        ),
+        "received out-of-band data from server": lambda oConnectionsToServerPool, *, oConnection, sbOutOfBandData: oSelf.fFireCallbacks(
+          "received out-of-band data from server",
+          oConnection = oConnection,
+          sbOutOfBandData = sbOutOfBandData,
         ),
         "sending request to server": lambda oConnectionsToServerPool, *, oConnection, oRequest: oSelf.fFireCallbacks(
           "sending request to server",

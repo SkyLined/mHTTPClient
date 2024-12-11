@@ -14,7 +14,6 @@ from mTCPIPConnection import (
   cTCPIPConnectionShutdownException,
   cTCPIPConnectTimeoutException,
 );
-from mHTTPProtocol import cURL;
 from mMultiThreading import cThread;
 
 COLOR_NORMAL =            0x0F07; # Light gray
@@ -83,14 +82,14 @@ def fTestClient(
         "Expected a cConnectionsToServerPool instance with one connection for %s, but found %d connections" % \
         (oTestURL, len(aoConnections));
   if oHTTPClient.__class__.__name__ == "cHTTPClientUsingProxyServer": 
-    # cHTTPClientUsingProxyServer specific checks
-    aoConnectionsToProxyNotConnectedToAServer = oHTTPClient._cHTTPClientUsingProxyServer__aoConnectionsToProxyNotConnectedToAServer;
-    assert len(aoConnectionsToProxyNotConnectedToAServer) == 1, \
-        "Expected one connection to the proxy, but found %d connections" % len(aoConnectionsToProxyNotConnectedToAServer);
-    doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort = oHTTPClient._cHTTPClientUsingProxyServer__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort;
-    asSecureConnectionTargets = list(doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.keys());
-    assert len(asSecureConnectionTargets) == 0, \
-        "Expected no secure connections, but found %s" % repr(asSecureConnectionTargets);
+    oConnectionsToProxyPool = oHTTPClient._cHTTPClientUsingProxyServer__oConnectionsToProxyPool;
+    aoConnectionsToProxy = oConnectionsToProxyPool._cHTTPConnectionsToServerPool__aoConnections;
+    assert len(aoConnectionsToProxy) == 1, \
+        "Expected cConnectionsToServerPool instance to have one connection to proxy, but found %d connections" % \
+        (len(aoConnectionsToProxy),);
+    aoReservedConnectionsToProxy = oHTTPClient._cHTTPConnectionsToServerPool__aoReservedConnectionsToServersThroughProxy;
+    assert len(aoReservedConnectionsToProxy) == 0, \
+        "Expected no reserved connection to the proxy, but found %d connections" % len(aoReservedConnectionsToProxy);
 
   # Wrapping SSL secured sockets in SSL is not currently supported, so the
   # client cannot secure a connection to a server over a secure connection to a
@@ -132,24 +131,14 @@ def fTestClient(
           "Expected a cConnectionsToServerPool instance with one connection for %s, but found %d connections" % \
           (oSecureTestURL, len(aoConnections));
     if oHTTPClient.__class__.__name__ == "cHTTPClientUsingProxyServer": 
-      # cHTTPClientUsingProxyServer specific checks
-      aoConnectionsToProxyNotConnectedToAServer = oHTTPClient._cHTTPClientUsingProxyServer__aoConnectionsToProxyNotConnectedToAServer;
-      doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort = oHTTPClient._cHTTPClientUsingProxyServer__doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort;
-      asbSecureConnectionTargets = list(doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.keys());
-      bFoundUnexpectedNonSecureConnections = len(aoConnectionsToProxyNotConnectedToAServer) != 0;
-      bFoundUnexpectedSecureConnections = set(asbSecureConnectionTargets) != set((oSecureTestURL.sbBase,));
-      if bFoundUnexpectedNonSecureConnections or bFoundUnexpectedSecureConnections:
-        if bFoundUnexpectedNonSecureConnections:
-          print("The HTTP client has unexpected non-secure connections!");
-        if bFoundUnexpectedSecureConnections:
-          print("The HTTP client has unexpected secure connections!");
-        print("Non-secure connections:");
-        for oNonSecureConnection in aoConnectionsToProxyNotConnectedToAServer:
-          print("* %s" % repr(oNonSecureConnection));
-        print("Secure connections:");
-        for (sbProtocolHostPort, oSecureConnection) in doSecureConnectionToServerThroughProxy_by_sbProtocolHostPort.items():
-          print("* %S => %s" % (sbProtocolHostPort, repr(oSecureConnection)));
-        raise AssertionError();
+      oConnectionsToProxyPool = oHTTPClient._cHTTPClientUsingProxyServer__oConnectionsToProxyPool;
+      aoConnectionsToProxy = oConnectionsToProxyPool._cHTTPConnectionsToServerPool__aoConnections;
+      assert len(aoConnectionsToProxy) == 0, \
+          "Expected cConnectionsToServerPool instance to have no connections to proxy, but found %d connections" % \
+          (len(aoConnectionsToProxy),);
+      aoReservedConnectionsToProxy = oHTTPClient._cHTTPConnectionsToServerPool__aoReservedConnectionsToServersThroughProxy;
+      assert len(aoReservedConnectionsToProxy) == 0, \
+          "Expected no reserved connection to the proxy, but found %d connections" % len(aoReservedConnectionsToProxy);
   
   ### CHECK IF FOLLOWING REDIRECTS WORKS #########################################
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a test request to %s " % oSecureRedirectURL, sPadding = "\u2500");
@@ -280,7 +269,7 @@ def fTestClient(
       auAcceptableStatusCodes = None;
     if oHTTPClient.__class__.__name__ == "cHTTPClientUsingProxyServer":
       if auAcceptableStatusCodes:
-        oConsole.fStatus("  * Expecting a HTTP %s reponse..." % "/".join(["%03d" % uStatusCode for uStatusCode in auAcceptableStatusCodes]));
+        oConsole.fStatus("  * Expecting a HTTP %s response..." % "/".join(["%03d" % uStatusCode for uStatusCode in auAcceptableStatusCodes]));
         cExpectedExceptionClass = None;
     for uConnectionNumber in range(1, uNumberOfRequests + 1):
       if uConnectionNumber < uNumberOfRequests:
