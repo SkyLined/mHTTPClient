@@ -33,6 +33,21 @@ def fTestClientUsingProxyServer(
     o0zCertificateStore = oCertificateStore,
     n0zConnectToProxyTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
   );
+  for sEventName in oHTTPClient.fasGetEventNames():
+    (lambda sEventName: oHTTPClient.fAddCallback(
+      sEventName,
+      lambda oProxyServer, **dxArguments: oConsole.fOutput(
+        "*** %s %s: %s" % (
+          oHTTPClient,
+          sEventName,
+          ", ".join(
+            "%s=%s" % (sArgumentName, str(xArgumentValue))
+            for (sArgumentName, xArgumentValue) in dxArguments.items()
+          )
+        )
+      ),
+    ))(sEventName);
+
   if f0LogEvents: f0LogEvents(oHTTPClient, "oHTTPClient");
   
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Running client tests through proxy server... ", sPadding = "\u2500");

@@ -165,6 +165,20 @@ try:
       o0zCertificateStore = o0CertificateStore,
       n0zConnectTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
     );
+    for sEventName in oHTTPClient.fasGetEventNames():
+      (lambda sEventName: oHTTPClient.fAddCallback(
+        sEventName,
+        lambda oEventSource, **dxArguments: oConsole.fOutput(
+          "*** %s %s: %s" % (
+            oEventSource,
+            sEventName,
+            ", ".join(
+              "%s=%s" % (sArgumentName, str(xArgumentValue))
+              for (sArgumentName, xArgumentValue) in dxArguments.items()
+            )
+          )
+        ),
+      ))(sEventName);
     if f0LogEvents: f0LogEvents(oHTTPClient);
     oConsole.fOutput(HEADER, "\u2500\u2500\u2500\u2500 Test HTTP client ", sPadding = "\u2500");
     fTestClient(oHTTPClient, o0CertificateStore, nEndWaitTimeoutInSeconds);

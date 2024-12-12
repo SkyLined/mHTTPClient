@@ -15,6 +15,20 @@ def fTestClientUsingAutomaticProxyServer(
     n0zConnectTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
   );
   if f0LogEvents: f0LogEvents(oHTTPClient, "oHTTPClient");
+  for sEventName in oHTTPClient.fasGetEventNames():
+    (lambda sEventName: oHTTPClient.fAddCallback(
+      sEventName,
+      lambda oHTTPClient, **dxArguments: oConsole.fOutput(
+        "*** %s %s: %s" % (
+          oHTTPClient,
+          sEventName,
+          ", ".join(
+            "%s=%s" % (sArgumentName, str(xArgumentValue))
+            for (sArgumentName, xArgumentValue) in dxArguments.items()
+          )
+        )
+      ),
+    ))(sEventName);
   
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Running client tests through automatic proxy server... ", sPadding = "\u2500");
   fTestClient(oHTTPClient, oCertificateStore, nEndWaitTimeoutInSeconds);
