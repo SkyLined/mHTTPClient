@@ -48,7 +48,6 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
   n0zDefaultSecureConnectionToProxyTimeoutInSeconds = zNotProvided;
   n0zDefaultSecureConnectionToServerTimeoutInSeconds = zNotProvided;
   # There is no default transaction timeout in the mHTTPConnection classes, so this cannot be zNotProvided.
-  n0zDefaultTransactionTimeoutInSeconds = 10;
   
   @ShowDebugOutput
   def __init__(oSelf,
@@ -86,7 +85,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__n0zConnectToProxyTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zConnectToProxyTimeoutInSeconds, oSelf.n0zDefaultConnectToProxyTimeoutInSeconds);
     oSelf.__n0zSecureConnectionToProxyTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToProxyTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToProxyTimeoutInSeconds);
     oSelf.__n0zSecureConnectionToServerTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureConnectionToServerTimeoutInSeconds, oSelf.n0zDefaultSecureConnectionToServerTimeoutInSeconds);
-    oSelf.__n0zTransactionTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zTransactionTimeoutInSeconds, oSelf.n0zDefaultTransactionTimeoutInSeconds);
+    oSelf.__n0zTransactionTimeoutInSeconds = n0zTransactionTimeoutInSeconds;
     oSelf.__bVerifyCertificates = bVerifyCertificates;
     oSelf.__bzCheckHost = bzCheckHost;
     
@@ -508,7 +507,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     );
     # We've used some time to setup the connection; reset the transaction timeout
     oConnectionToServerThroughProxy.fRestartTransaction(
-      n0TimeoutInSeconds = oSelf.__n0TransactionTimeoutInSeconds,
+      n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cHTTPConnection.n0DefaultTransactionTimeoutInSeconds),
     );
     if bSecureConnection:
       assert m0SSL, \
@@ -566,7 +565,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oSelf.__aoReservedConnectionsToServersThroughProxyPropertyLock.fRelease();
     # and start using it...
     oConnectionToServerThroughProxy.fRestartTransaction(
-      n0TimeoutInSeconds = oSelf.__n0TransactionTimeoutInSeconds
+      n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cHTTPConnection.n0DefaultTransactionTimeoutInSeconds),
     );
     return oConnectionToServerThroughProxy;
   

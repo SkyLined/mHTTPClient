@@ -36,7 +36,6 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
   u0zDefaultMaxNumberOfConnectionsToServer = 10;
   n0zDefaultConnectTimeoutInSeconds = 10;
   n0zDefaultSecureTimeoutInSeconds = 5;
-  n0zDefaultTransactionTimeoutInSeconds = 10;
   
   @ShowDebugOutput
   def __init__(oSelf,
@@ -64,7 +63,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     # Timeouts can be provided through class default, instance defaults, or method call arguments.
     oSelf.__n0zConnectTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zConnectTimeoutInSeconds, oSelf.n0zDefaultConnectTimeoutInSeconds);
     oSelf.__n0zSecureTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zSecureTimeoutInSeconds, oSelf.n0zDefaultSecureTimeoutInSeconds);
-    oSelf.__n0zTransactionTimeoutInSeconds = fxzGetFirstProvidedValueIfAny(n0zTransactionTimeoutInSeconds, oSelf.n0zDefaultTransactionTimeoutInSeconds);
+    oSelf.__n0zTransactionTimeoutInSeconds = n0zTransactionTimeoutInSeconds;
     oSelf.__bVerifyCertificates = bVerifyCertificates;
     if bVerifyCertificates:
       oSelf.__bzCheckHost = bzCheckHost;
