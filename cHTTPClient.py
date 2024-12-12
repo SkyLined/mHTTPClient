@@ -243,7 +243,7 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
     if oSelf.__bStopping:
       fShowDebugOutput(oSelf, "Stopping.");
       return None;
-    return oConnectionsToServerPool.fo0GetConnectionAndStartTransaction(
+    return oConnectionsToServerPool.fo0GetConnectionAndStartTransactionBeforeSendingRequest(
       n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
       bSecureConnection = bSecureConnection,
       n0zSecureTimeoutInSeconds = oSelf.__n0zSecureTimeoutInSeconds,

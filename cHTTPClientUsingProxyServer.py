@@ -453,7 +453,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     if oSelf.__bStopping:
       fShowDebugOutput(oSelf, "Stopping.");
       return None;
-    o0ConnectionToProxy = oSelf.__oConnectionsToProxyPool.fo0GetConnectionAndStartTransaction();
+    o0ConnectionToProxy = oSelf.__oConnectionsToProxyPool.fo0GetConnectionAndStartTransactionBeforeSendingRequest();
     if o0ConnectionToProxy is None:
       assert oSelf.__bStopping, \
           "A new connection to the proxy was not established even though we are not stopping!?";
