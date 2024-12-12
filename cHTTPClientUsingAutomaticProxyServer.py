@@ -143,8 +143,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       "resolving server hostname to ip address failed",
       "resolved server hostname to ip address",
       
-      "connecting to server",
-      "connecting to server failed",
+      "creating connection to server",
+      "creating connection to server failed",
       "created connection to server",
       "terminated connection to server",
       
@@ -169,13 +169,13 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       "resolving proxy hostname failed",
       "resolved proxy hostname to ip address",
       
-      "connecting to proxy",
-      "connecting to proxy failed",
+      "creating connection to proxy",
+      "creating connection to proxy failed",
       "created connection to proxy",
       "terminated connection to proxy",
       
-      "connecting to server through proxy",
-      "connecting to server through proxy failed",
+      "creating connection to server through proxy",
+      "creating connection to server through proxy failed",
       "created connection to server through proxy",
       
       "securing connection to server through proxy",
@@ -443,15 +443,15 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             sbIPAddress = sbIPAddress,
             sCanonicalName = sCanonicalName,
           ),
-          "connecting to server": lambda oClient, *, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
-            "connecting to server",
+          "creating connection to server": lambda oClient, *, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
+            "creating connection to server",
             oClient = oClient,
             sbHost = sbHost,
             sbIPAddress = sbIPAddress,
             uPortNumber = uPortNumber,
           ),
-          "connecting to server failed": lambda oClient, *, sbHost, sbIPAddress, uPortNumber, oException: oSelf.fFireCallbacks(
-            "connecting to server failed",
+          "creating connection to server failed": lambda oClient, *, sbHost, sbIPAddress, uPortNumber, oException: oSelf.fFireCallbacks(
+            "creating connection to server failed",
             oClient = oClient,
             sbHost = sbHost,
             sbIPAddress = sbIPAddress,
@@ -598,14 +598,14 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             sCanonicalName = sCanonicalName,
           ),
           # Connecting to proxy
-          "connecting to proxy": lambda oClient, *, oProxyServerURL, sbIPAddress: oSelf.fFireCallbacks(
-            "connecting to proxy",
+          "creating connection to proxy": lambda oClient, *, oProxyServerURL, sbIPAddress: oSelf.fFireCallbacks(
+            "creating connection to proxy",
             oProxyServerURL = oProxyServerURL,
             oClient = oClient,
             sbIPAddress = sbIPAddress,
           ),
-          "connecting to proxy failed": lambda oClient, *, oProxyServerURL, sbIPAddress, uPortNumber, oException: oSelf.fFireCallbacks(
-            "connecting to proxy failed",
+          "creating connection to proxy failed": lambda oClient, *, oProxyServerURL, sbIPAddress, uPortNumber, oException: oSelf.fFireCallbacks(
+            "creating connection to proxy failed",
             oProxyServerURL = oProxyServerURL,
             oClient = oClient,
             sbIPAddress = sbIPAddress,
@@ -700,16 +700,16 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             oResponse = oResponse,
           ),
           # Connecting to server through proxy
-          "connecting to server through proxy": lambda oClient, *, oConnection, sbServerHost, uServerPortNumber: oSelf.fFireCallbacks(
-            "connecting to server through proxy",
+          "creating connection to server through proxy": lambda oClient, *, oConnection, sbServerHost, uServerPortNumber: oSelf.fFireCallbacks(
+            "creating connection to server through proxy",
             oProxyServerURL = oProxyServerURL,
             oClient = oClient,
             oConnection = oConnection,
             sbServerHost = sbServerHost,
             uServerPortNumber = uServerPortNumber,
           ),
-          "connecting to server through proxy failed": lambda oClient, *, oConnection, sbServerHost, uServerPortNumber, uStatusCode: oSelf.fFireCallbacks(
-            "connecting to server through proxy failed",
+          "creating connection to server through proxy failed": lambda oClient, *, oConnection, sbServerHost, uServerPortNumber, uStatusCode: oSelf.fFireCallbacks(
+            "creating connection to server through proxy failed",
             oClient = oClient,
             oProxyServerURL = oProxyServerURL,
             oConnection = oConnection,

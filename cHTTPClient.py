@@ -92,8 +92,8 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
       "resolving server hostname to ip address failed",
       "resolved server hostname to ip address",
       
-      "connecting to server",
-      "connecting to server failed",
+      "creating connection to server",
+      "creating connection to server failed",
       "created connection to server",
       "terminated connection to server",
       
@@ -321,14 +321,14 @@ class cHTTPClient(iHTTPClient, cWithCallbacks):
           sbIPAddress = sbIPAddress,
           sCanonicalName = sCanonicalName,
         ),
-        "connecting to server": lambda oConnectionsToServerPool, *, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
-          "connecting to server",
+        "creating connection to server": lambda oConnectionsToServerPool, *, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
+          "creating connection to server",
           sbHost = sbHost,
           sbIPAddress = sbIPAddress,
           uPortNumber = uPortNumber,
         ),
-        "connecting to server failed": lambda oConnectionsToServerPool, *, oException, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
-          "connecting to server failed",
+        "creating connection to server failed": lambda oConnectionsToServerPool, *, oException, sbHost, sbIPAddress, uPortNumber: oSelf.fFireCallbacks(
+          "creating connection to server failed",
           oException = oException,
           sbHost = sbHost,
           sbIPAddress = sbIPAddress,

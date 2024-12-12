@@ -152,14 +152,14 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         sbIPAddress = sbIPAddress,
         sCanonicalName = sCanonicalName,
       ),
-      "connecting to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
-        "connecting to proxy",
+      "creating connection to server": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress: oSelf.fFireCallbacks(
+        "creating connection to proxy",
         sbHost = sbHost,
         uPortNumber = uPortNumber,
         sbIPAddress = sbIPAddress,
       ),
-      "connecting to server failed": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oException: oSelf.fFireCallbacks(
-        "connecting to proxy failed",
+      "creating connection to server failed": lambda oConnectionsToProxyPool, *, sbHost, uPortNumber, sbIPAddress, oException: oSelf.fFireCallbacks(
+        "creating connection to proxy failed",
         sbHost = sbHost,
         uPortNumber = uPortNumber,
         sbIPAddress = sbIPAddress,
@@ -277,8 +277,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       "resolving proxy hostname to ip address failed",
       "resolved proxy hostname to ip address",
       
-      "connecting to proxy",
-      "connecting to proxy failed",
+      "creating connection to proxy",
+      "creating connection to proxy failed",
       "created connection to proxy",
       "terminated connection to proxy",
       
@@ -297,8 +297,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       "receiving response from proxy failed",
       "received response from proxy",
       
-      "connecting to server through proxy",
-      "connecting to server through proxy failed",
+      "creating connection to server through proxy",
+      "creating connection to server through proxy failed",
       "created connection to server through proxy",
       "terminated connection to server through proxy",
       
@@ -468,7 +468,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       }),
     );
     oSelf.fFireCallbacks(
-      "connecting to server through proxy",
+      "creating connection to server through proxy",
       oProxyServerURL = oSelf.oProxyServerURL,
       oConnection = oConnectionToProxy,
       sbServerHost = oURL.sbHost,
@@ -481,7 +481,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       return None;
     if oConnectResponse.uStatusCode != 200:
       oSelf.fFireCallbacks(
-        "connecting to server through proxy failed",
+        "creating connection to server through proxy failed",
         oProxyServerURL = oSelf.oProxyServerURL,
         oConnection = oConnectionToProxy,
         sbServerHost = oURL.sbHost,
@@ -492,7 +492,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oConnectionToProxy.fDisconnect();
       raise cHTTPClientFailedToConnectToServerThroughProxyException(
         "The proxy did not accept our CONNECT request.",
-        {"oConnectRequest": oConnectRequest, "oConnectResponse": oConnectResponse},
+        dxDetails = {"oConnectRequest": oConnectRequest, "oConnectResponse": oConnectResponse},
       );
     oSelf.fFireCallbacks(
       "created connection to server through proxy",
