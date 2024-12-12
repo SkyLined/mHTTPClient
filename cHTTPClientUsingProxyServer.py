@@ -11,6 +11,7 @@ from mMultiThreading import (
   cWithCallbacks
 );
 from mHTTPConnection import (
+  cHTTPConnection,
   cHTTPConnectionsToServerPool,
 );
 from mHTTPProtocol import (
@@ -394,7 +395,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       fShowDebugOutput("Stopping.");
       return None;
     if oURL.bSecure:
-      o0Connection = oSelf.fo0GetConnectionAndStartTransactionForURL(oURL, bSecure = True);
+      o0Connection = oSelf.fo0GetConnectionAndStartTransactionForURL(oURL);
       if o0Connection is None:
         assert oSelf.__bStopping, \
             "A connection to the proxy was not available even though we are not stopping!?";
@@ -455,7 +456,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     o0ConnectionToProxy = oSelf.__oConnectionsToProxyPool.fo0GetConnectionAndStartTransaction();
     if o0ConnectionToProxy is None:
       assert oSelf.__bStopping, \
-          "A new connection to the proxy as not established even though we are not stopping!?";
+          "A new connection to the proxy was not established even though we are not stopping!?";
       return None;
     oConnectionToProxy = o0ConnectionToProxy;
     oConnectRequest = cHTTPRequest(
@@ -557,12 +558,6 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
         uServerPortNumber = oURL.uPortNumber,
         oSSLContext = oSSLContext,
       );
-    # Remember that we now have this secure connection to the server
-    oSelf.__aoReservedConnectionsToServersThroughProxyPropertyLock.fAcquire();
-    try:
-      oSelf.__aoReservedConnectionsToServersThroughProxy.append(oConnectionToServerThroughProxy);
-    finally:
-      oSelf.__aoReservedConnectionsToServersThroughProxyPropertyLock.fRelease();
     # and start using it...
     oConnectionToServerThroughProxy.fRestartTransaction(
       n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cHTTPConnection.n0DefaultTransactionTimeoutInSeconds),
@@ -570,18 +565,13 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     return oConnectionToServerThroughProxy;
   
   def __fHandleConnectionToServerThroughProxyDisconnected(oSelf, oConnectionToServerThroughProxy, oServerBaseURL):
-    oSelf.__aoReservedConnectionsToServersThroughProxyPropertyLock.fAcquire();
-    try:
-      oSelf.__aoReservedConnectionsToServersThroughProxy.remove(oConnectionToServerThroughProxy);
-    finally:
-      oSelf.__aoReservedConnectionsToServersThroughProxy.fRelease();
-      oSelf.fFireCallbacks(
-        "terminated connection to server through proxy",
-        oProxyServerURL = oSelf.oProxyServerURL,
-        oConnection = oConnectionToServerThroughProxy,
-        sbServerHost = oServerBaseURL.sbHost,
-        uServerPortNumber = oServerBaseURL.uPortNumber,
-      ),
+    oSelf.fFireCallbacks(
+      "terminated connection to server through proxy",
+      oProxyServerURL = oSelf.oProxyServerURL,
+      oConnection = oConnectionToServerThroughProxy,
+      sbServerHost = oServerBaseURL.sbHost,
+      uServerPortNumber = oServerBaseURL.uPortNumber,
+    ),
   
   def fasGetDetails(oSelf):
     # This is done without a property lock, so race-conditions exist and it
