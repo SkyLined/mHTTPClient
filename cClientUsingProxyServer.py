@@ -11,12 +11,12 @@ from mMultiThreading import (
   cWithCallbacks
 );
 from mHTTPConnection import (
-  cHTTPConnection,
-  cHTTPConnectionsToServerPool,
+  cConnection,
+  cConnectionsToServerPool,
 );
 from mHTTPProtocol import (
-  cHTTPRequest,
-  cHTTPHeaders,
+  cRequest,
+  cHeaders,
 );
 from mNotProvided import (
   fbIsProvided,
@@ -29,9 +29,9 @@ try: # SSL support is optional.
 except:
   m0SSL = None; # No SSL support
 
-from .iHTTPClient import iHTTPClient;
+from .iClient import iClient;
 from .mExceptions import (
-  cHTTPClientFailedToConnectToServerThroughProxyException,
+  cClientFailedToConnectToServerThroughProxyException,
 );
 
 # To turn access to data store in multiple variables into a single transaction, we will create locks.
@@ -39,7 +39,7 @@ from .mExceptions import (
 # bug, where "too long" is defined by the following value:
 gnDeadlockTimeoutInSeconds = 1; # We're not doing anything time consuming, so this should suffice.
 
-class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
+class cClientUsingProxyServer(iClient, cWithCallbacks):
   # Some sane limitation on the number of connections to the proxy makes sense, to reduce the risk of a bug in the
   # code causing an excessive number of connections to be made:
   u0DefaultMaxNumberOfConnectionsToProxy = 10;
@@ -124,7 +124,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     else:
       # The URL may either be "http://" or we will not be able to create secure connections when asked.
       o0SSLContext = None;
-    oSelf.__oConnectionsToProxyPool = cHTTPConnectionsToServerPool(
+    oSelf.__oConnectionsToProxyPool = cConnectionsToServerPool(
       oProxyServerURL,
       u0zMaxNumberOfConnectionsToServer = oSelf.__u0MaxNumberOfConnectionsToProxy,
       o0SSLContext = o0SSLContext,
@@ -382,9 +382,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     oRequest,
     oURL,
     *,
-    u0zMaxStatusLineSize = zNotProvided,
-    u0zMaxHeaderNameSize = zNotProvided,
-    u0zMaxHeaderValueSize = zNotProvided,
+    u0zMaxStartLineSize = zNotProvided,
+    u0zMaxHeaderLineSize = zNotProvided,
     u0zMaxNumberOfHeaders = zNotProvided,
     u0zMaxBodySize = zNotProvided,
     u0zMaxChunkSize = zNotProvided,
@@ -404,9 +403,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       try:
         oResponse = oConnection.foSendRequestAndReceiveResponse(
           oRequest,
-          u0zMaxStatusLineSize = u0zMaxStatusLineSize,
-          u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
-          u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
+          u0zMaxStartLineSize = u0zMaxStartLineSize,
+          u0zMaxHeaderLineSize = u0zMaxHeaderLineSize,
           u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
           u0zMaxBodySize = u0zMaxBodySize,
           u0zMaxChunkSize = u0zMaxChunkSize,
@@ -425,9 +423,8 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       oRequest.sbURL = oURL.sbAbsolute;
       o0Response = oSelf.__oConnectionsToProxyPool.fo0SendRequestAndReceiveResponse(
         oRequest,
-        u0zMaxStatusLineSize = u0zMaxStatusLineSize,
-        u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
-        u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
+        u0zMaxStartLineSize = u0zMaxStartLineSize,
+        u0zMaxHeaderLineSize = u0zMaxHeaderLineSize,
         u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
         u0zMaxBodySize = u0zMaxBodySize,
         u0zMaxChunkSize = u0zMaxChunkSize,
@@ -459,10 +456,10 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
           "A new connection to the proxy was not established even though we are not stopping!?";
       return None;
     oConnectionToProxy = o0ConnectionToProxy;
-    oConnectRequest = cHTTPRequest(
+    oConnectRequest = cRequest(
       sbURL = oURL.sbAddress,
       sbzMethod = b"CONNECT",
-      o0zHeaders = cHTTPHeaders.foFromDict({
+      o0zHeaders = cHeaders.foFromDict({
         b"Host": oURL.sbAddress,
         b"Connection": b"Keep-Alive",
       }),
@@ -490,7 +487,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       );
       # I am not entirely sure if we can trust the connection after this, so let's close it to prevent issues:
       oConnectionToProxy.fDisconnect();
-      raise cHTTPClientFailedToConnectToServerThroughProxyException(
+      raise cClientFailedToConnectToServerThroughProxyException(
         "The proxy did not accept our CONNECT request.",
         dxDetails = {"oConnectRequest": oConnectRequest, "oConnectResponse": oConnectResponse},
       );
@@ -508,7 +505,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
     );
     # We've used some time to setup the connection; reset the transaction timeout
     oConnectionToServerThroughProxy.fRestartTransaction(
-      n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cHTTPConnection.n0DefaultTransactionTimeoutInSeconds),
+      n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cConnection.n0DefaultTransactionTimeoutInSeconds),
     );
     if bSecureConnection:
       assert m0SSL, \
@@ -560,7 +557,7 @@ class cHTTPClientUsingProxyServer(iHTTPClient, cWithCallbacks):
       );
     # and start using it...
     oConnectionToServerThroughProxy.fRestartTransaction(
-      n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cHTTPConnection.n0DefaultTransactionTimeoutInSeconds),
+      n0TimeoutInSeconds = fxGetFirstProvidedValue(oSelf.__n0zTransactionTimeoutInSeconds, cConnection.n0DefaultTransactionTimeoutInSeconds),
     );
     return oConnectionToServerThroughProxy;
   

@@ -1,4 +1,4 @@
-import os, sys;
+import os, sys, threading;
 sModulePath = os.path.dirname(__file__);
 sys.path = [sModulePath] + [sPath for sPath in sys.path if sPath.lower() != sModulePath.lower()];
 
@@ -40,7 +40,7 @@ try:
   
   import os, sys;
   
-  from mHTTPClient import cHTTPClient;
+  from mHTTPClient import cClient;
   from mHTTPProtocol import cURL;
   
   try:
@@ -63,14 +63,24 @@ try:
     else:
       oConsole.fOutput(OVERWRITE_FILE, " * ", sFileOrFolderPath, " => %d bytes." % len(s0NewContent));
   
+  oEventLock = threading.Lock();
   def fLogEvents(oWithCallbacks, sWithCallbacks = None):
     def fAddCallback(sEventName):
       def fOutputEventDetails(oWithCallbacks, *txArguments, **dxArguments):
-        oConsole.fOutput(sWithCallbacks or str(oWithCallbacks), " => ", repr(sEventName));
-        for xValue in txArguments:
-          oConsole.fOutput("  ", str(xValue));
-        for (sName, xValue) in dxArguments.items():
-          oConsole.fOutput("  ", sName, " = ", str(xValue));
+        oEventLock.acquire();
+        try:
+          oConsole.fOutput("┬─event: ", sWithCallbacks or str(oWithCallbacks), " => ", repr(sEventName));
+          asArguments = [];
+          for xValue in txArguments:
+            asArguments.append(repr(xValue));
+          for (sName, xValue) in dxArguments.items():
+            asArguments.append(f"{repr(sName)} = {repr(xValue)}");
+          for sArgument in asArguments[:-1]:
+            oConsole.fOutput("├─", sArgument);
+          for sArgument in asArguments[-1:]:
+            oConsole.fOutput("└─", sArgument);
+        finally:
+          oEventLock.release();
       
       oWithCallbacks.fAddCallback(sEventName, fOutputEventDetails);
     
@@ -90,7 +100,7 @@ try:
       bTestClient = True;
       bTestClientUsingProxyServer = True;
       bTestClientUsingAutomaticProxyServer = True;
-    elif sArgument == "--events":
+    elif sArgument in ["--events", "--log-events"]:
       f0LogEvents = fLogEvents;
     elif sArgument == "--debug":
       assert m0DebugOutput, \
@@ -104,14 +114,14 @@ try:
       # I've disabled output from the HTTP header classes to keep it reasonably clean.
       # m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPHeader);
       # m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPHeaders);
-      m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPRequest);
-      m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cHTTPResponse);
-      m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.iHTTPMessage);
+      m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cRequest);
+      m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.cResponse);
+      m0DebugOutput.fEnableDebugOutputForClass(mHTTPProtocol.iMessage);
       if m0SSL is not None:
         m0DebugOutput.fEnableDebugOutputForModule(m0SSL);
       # Outputting debug information is slow, so increase the timeout!
-      mHTTPClient.cHTTPClient.nDefaultConnectTimeoutInSeconds = 100;
-      mHTTPClient.cHTTPClient.nDefaultTransactionTimeoutInSeconds = 100;
+      mHTTPClient.cClient.nDefaultConnectTimeoutInSeconds = 100;
+      mHTTPClient.cClient.nDefaultTransactionTimeoutInSeconds = 100;
     else:
       # We assume this is a flag that enables a specific test. If this is the
       # first such flag, we will disable all tests to make sure we only run the
@@ -160,13 +170,13 @@ try:
   
   if bTestClient is not False:
     from fTestClient import fTestClient;
-    oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClient instance ", sPadding = "\u2500");
-    oHTTPClient = cHTTPClient(
+    oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cClient instance ", sPadding = "\u2500");
+    oClient = cClient(
       o0zCertificateStore = o0CertificateStore,
       n0zConnectTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
     );
-    for sEventName in oHTTPClient.fasGetEventNames():
-      (lambda sEventName: oHTTPClient.fAddCallback(
+    for sEventName in oClient.fasGetEventNames():
+      (lambda sEventName: oClient.fAddCallback(
         sEventName,
         lambda oEventSource, **dxArguments: oConsole.fOutput(
           "*** %s %s: %s" % (
@@ -179,9 +189,9 @@ try:
           )
         ),
       ))(sEventName);
-    if f0LogEvents: f0LogEvents(oHTTPClient);
+    if f0LogEvents: f0LogEvents(oClient);
     oConsole.fOutput(HEADER, "\u2500\u2500\u2500\u2500 Test HTTP client ", sPadding = "\u2500");
-    fTestClient(oHTTPClient, o0CertificateStore, nEndWaitTimeoutInSeconds);
+    fTestClient(oClient, o0CertificateStore, nEndWaitTimeoutInSeconds);
   
   if bTestClientUsingProxyServer is not False:
     from fTestClientUsingProxyServer import fTestClientUsingProxyServer;

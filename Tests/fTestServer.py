@@ -5,9 +5,14 @@ def ftxRequestHandler(
   oConnection,
   oRequest,
 ):
+  oResponse = oConnection.foCreateResponses(
+    uzStatusCode = 200,
+    sb0Data = b"Hello, world!",
+    bAddContentLengthHeader = True,
+  );
+  oResponse.fSetContentTypeHeader("text/plain");
   return (
-    oConnection.foCreateResponse(s0Data = "Hello, world!"),
-    oRequest.bIndicatesConnectionShouldBeClosed,
+    oResponse,
     None, # No next connection handler
   );
 
@@ -22,13 +27,19 @@ def fTestServer(
   # Can be use to test cHTTPServer with a http:// or https:// URL.
   if oServerURL.bSecure:
     oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cSSLContext instance for %s... " % repr(oServerURL.sbHostname), sPadding = "\u2500");
-    oSSLContext = oCertificateStore.foGetServersideSSLContextForHostname(oServerURL.sbHostname);
+    o0SSLContext = oCertificateStore.foGetServersideSSLContextForHostname(oServerURL.sbHostname);
     oConsole.fOutput(0x0F0F, repr(oSSLContext._cSSLContext__oPythonSSLContext.get_ca_certs()));
-    oConsole.fOutput("* oSSLContext for ", str(oServerURL.sbHostname, 'latin1'), ": ", str(oSSLContext));
+    oConsole.fOutput("* oSSLContext for ", str(oServerURL.sbHostname, 'latin1'), ": ", str(o0SSLContext));
   else:
-    oSSLContext = None;
+    o0SSLContext = None;
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPServer instance at %s... " % oServerURL, sPadding = "\u2500");
-  oHTTPServer = cHTTPServer(ftxRequestHandler, oServerURL.sbHostname, oServerURL.uPortNumber, oSSLContext);
+  oHTTPServer = cHTTPServer(
+    ftxRequestHandler,
+    sbzHost = oServerURL.sbHostname,
+    uzPortNumber = oServerURL.uPortNumber,
+    o0SSLContext = o0SSLContext,
+    bRaiseExceptionsInRequestHandler = True,
+  );
   if f0LogEvents: f0LogEvents(oHTTPServer, "oHTTPServer");
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a new cHTTPClient instance... ", sPadding = "\u2500");
   oHTTPClient = cHTTPClient(oCertificateStore);

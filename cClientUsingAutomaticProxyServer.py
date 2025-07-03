@@ -41,16 +41,16 @@ try: # SSL support is optional.
 except:
   c0CertificateStore = None; # No SSL support
 
-from .cHTTPClient import cHTTPClient;
-from .cHTTPClientUsingProxyServer import cHTTPClientUsingProxyServer;
-from .iHTTPClient import iHTTPClient;
+from .cClient import cClient;
+from .cClientUsingProxyServer import cClientUsingProxyServer;
+from .iClient import iClient;
 
 # To turn access to data store in multiple variables into a single transaction, we will create locks.
 # These locks should only ever be locked for a short time; if it is locked for too long, it is considered a "deadlock"
 # bug, where "too long" is defined by the following value:
 gnDeadlockTimeoutInSeconds = 1; # We're not doing anything time consuming, so this should suffice.
 
-class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
+class cClientUsingAutomaticProxyServer(iClient, cWithCallbacks):
   u0zDefaultMaxNumberOfConnectionsToServerWithoutProxy = 10;
   u0zDefaultMaxNumberOfConnectionsToProxy = 10; # zNotProvided => use value from 
   n0zDefaultConnectTimeoutInSeconds = 10;
@@ -124,8 +124,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       "%s.__oPropertyAccessTransactionLock" % oSelf.__class__.__name__,
       n0DeadlockTimeoutInSeconds = gnDeadlockTimeoutInSeconds
     );
-    oSelf.__oDirectHTTPClient = None;
-    oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL = {};
+    oSelf.__oDirectClient = None;
+    oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL = {};
     
     oSelf.__bStopping = False;
     oSelf.__oTerminatedLock = cLock("%s.__oTerminatedLock" % oSelf.__class__.__name__, bLocked = True);
@@ -208,9 +208,9 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
   
   def fSetSendDelayPerByteInSeconds(oSelf, nSendDelayPerByteInSeconds):
     oSelf.nSendDelayPerByteInSeconds = nSendDelayPerByteInSeconds;
-    oSelf.__oDirectHTTPClient.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
-    for oHTTPClient in oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL.values():
-      oHTTPClient.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
+    oSelf.__oDirectClient.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
+    for oClient in oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL.values():
+      oClient.fSetSendDelayPerByteInSeconds(nSendDelayPerByteInSeconds);
   
   @ShowDebugOutput
   def fStop(oSelf):
@@ -221,22 +221,22 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       if oSelf.__bStopping:
         return fShowDebugOutput("Already stopping");
       fShowDebugOutput("Stopping...");
-      # Prevent any new cHTTPConnectionsToServerPool instances from being created.
+      # Prevent any new cConnectionsToServerPool instances from being created.
       oSelf.__bStopping = True;
-      oDirectHTTPClient = oSelf.__oDirectHTTPClient;
-      aoHTTPClientsUsingProxyServer = list(oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL.values());
+      oDirectClient = oSelf.__oDirectClient;
+      aoClientsUsingProxyServer = list(oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL.values());
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
-    if not oDirectHTTPClient:
-      if len(aoHTTPClientsUsingProxyServer) == 0:
+    if not oDirectClient:
+      if len(aoClientsUsingProxyServer) == 0:
         # We stopped when there were no clients: we are terminated.
         fShowDebugOutput("Terminated.");
         oSelf.__oTerminatedLock.fRelease();
         oSelf.fFireEvent("terminated");
     else:
-      oDirectHTTPClient.fStop();
-    for oHTTPClientUsingProxyServer in aoHTTPClientsUsingProxyServer:
-      oHTTPClientUsingProxyServer.fStop();
+      oDirectClient.fStop();
+    for oClientUsingProxyServer in aoClientsUsingProxyServer:
+      oClientUsingProxyServer.fStop();
   
   @ShowDebugOutput
   def fTerminate(oSelf):
@@ -246,20 +246,20 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
         return fShowDebugOutput("Already terminated.");
       fShowDebugOutput("Terminating...");
       oSelf.__bStopping = True;
-      oDirectHTTPClient = oSelf.__oDirectHTTPClient;
-      aoHTTPClientsUsingProxyServer = list(oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL.values());
+      oDirectClient = oSelf.__oDirectClient;
+      aoClientsUsingProxyServer = list(oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL.values());
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
-    if not oDirectHTTPClient:
-      if len(aoHTTPClientsUsingProxyServer) == 0:
+    if not oDirectClient:
+      if len(aoClientsUsingProxyServer) == 0:
         # We terminated when there were no clients: we are terminated.
         fShowDebugOutput("Terminated.");
         oSelf.__oTerminatedLock.fRelease();
         oSelf.fFireEvent("terminated");
     else:
-      oDirectHTTPClient.fTerminate();
-    for oHTTPClientUsingProxyServer in aoHTTPClientsUsingProxyServer:
-      oHTTPClientUsingProxyServer.fTerminate();
+      oDirectClient.fTerminate();
+    for oClientUsingProxyServer in aoClientsUsingProxyServer:
+      oClientUsingProxyServer.fTerminate();
     return;
   
   @ShowDebugOutput
@@ -341,9 +341,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
   @ShowDebugOutput
   def fo0GetResponseForRequestAndURL(oSelf, 
     oRequest, oURL,
-    u0zMaxStatusLineSize = zNotProvided,
-    u0zMaxHeaderNameSize = zNotProvided,
-    u0zMaxHeaderValueSize = zNotProvided,
+    u0zMaxStartLineSize = zNotProvided,
+    u0zMaxHeaderLineSize = zNotProvided,
     u0zMaxNumberOfHeaders = zNotProvided,
     u0zMaxBodySize = zNotProvided,
     u0zMaxChunkSize = zNotProvided,
@@ -353,18 +352,17 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     if oSelf.__bStopping:
       fShowDebugOutput("Stopping.");
       return None;
-    o0HTTPClient = oSelf.__fo0GetHTTPClientForURL(oURL);
+    o0Client = oSelf.__fo0GetClientForURL(oURL);
     if oSelf.__bStopping:
       fShowDebugOutput("Stopping.");
       return None;
-    assert o0HTTPClient is not None, \
+    assert o0Client is not None, \
         "This is unexpected";
-    oHTTPClient = o0HTTPClient;
-    o0Response = oHTTPClient.fo0GetResponseForRequestAndURL(
+    oClient = o0Client;
+    o0Response = oClient.fo0GetResponseForRequestAndURL(
       oRequest, oURL,
-      u0zMaxStatusLineSize = u0zMaxStatusLineSize,
-      u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
-      u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
+      u0zMaxStartLineSize = u0zMaxStartLineSize,
+      u0zMaxHeaderLineSize = u0zMaxHeaderLineSize,
       u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
       u0zMaxBodySize = u0zMaxBodySize,
       u0zMaxChunkSize = u0zMaxChunkSize,
@@ -385,17 +383,17 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     if oSelf.__bStopping:
       fShowDebugOutput("Stopping.");
       return None;
-    o0HTTPClient = oSelf.__fo0GetHTTPClientForURL(oURL);
+    o0Client = oSelf.__fo0GetClientForURL(oURL);
     if oSelf.__bStopping:
       fShowDebugOutput("Stopping.");
       return None;
-    assert o0HTTPClient is not None, \
+    assert o0Client is not None, \
         "This is unexpected";
-    oHTTPClient = o0HTTPClient;
-    return oHTTPClient.fo0GetConnectionAndStartTransactionForURL(oURL, bSecure);
+    oClient = o0Client;
+    return oClient.fo0GetConnectionAndStartTransactionForURL(oURL, bSecure);
   
   @ShowDebugOutput
-  def __fo0GetHTTPClientForURL(oSelf, oURL):
+  def __fo0GetClientForURL(oSelf, oURL):
     if oSelf.__bStopping:
       fShowDebugOutput("Stopping.");
       return None;
@@ -407,8 +405,8 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     );
     bNewClient = False;
     if o0ProxyServerURL is None:
-      if oSelf.__oDirectHTTPClient is None:
-        oClient = oSelf.__oDirectHTTPClient = cHTTPClient(
+      if oSelf.__oDirectClient is None:
+        oClient = oSelf.__oDirectClient = cClient(
           o0zCertificateStore = oSelf.__o0CertificateStore,
           u0zMaxNumberOfConnectionsToServer = oSelf.__u0zMaxNumberOfConnectionsToServerWithoutProxy,
           n0zConnectTimeoutInSeconds = oSelf.__n0zConnectTimeoutInSeconds,
@@ -546,17 +544,17 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             o0Request = o0Request,
             oResponse = oResponse,
           ),
-          "terminated": oSelf.__fHandleTerminatedCallbackFromDirectHTTPClient,
+          "terminated": oSelf.__fHandleTerminatedCallbackFromDirectClient,
         });
         bNewClient = True;
       else:
-        oClient = oSelf.__oDirectHTTPClient;
+        oClient = oSelf.__oDirectClient;
     else:
       oProxyServerURL = o0ProxyServerURL;
       sLowerProxyServerURL = str(oProxyServerURL).lower();
-      oClient = oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL.get(sLowerProxyServerURL);
+      oClient = oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL.get(sLowerProxyServerURL);
       if oClient is None:
-        oClient = oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL] = cHTTPClientUsingProxyServer(
+        oClient = oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL] = cClientUsingProxyServer(
           oProxyServerURL,
           bVerifyCertificatesForProxy = oSelf.__bVerifyCertificatesForProxy,
           bzCheckProxyHost = oSelf.__bzCheckProxyHost,
@@ -762,7 +760,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
             uServerPortNumber = uServerPortNumber,
             oSSLContext = oSSLContext,
           ),
-          "terminated": oSelf.__fHandleTerminatedCallbackFromHTTPClientUsingProxyServer,
+          "terminated": oSelf.__fHandleTerminatedCallbackFromClientUsingProxyServer,
         });
         bNewClient = True;
     
@@ -790,7 +788,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       );
     return oClient;
     
-  def __fHandleTerminatedCallbackFromDirectHTTPClient(oSelf, oClient):
+  def __fHandleTerminatedCallbackFromDirectClient(oSelf, oClient):
     oSelf.fFireCallbacks(
       "terminated client",
       oClient = oClient,
@@ -798,9 +796,9 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     );
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      oSelf.__oDirectHTTPClient = None;
+      oSelf.__oDirectClient = None;
       # Return if we are not stopping or if there are other connections open:
-      if not oSelf.__bStopping or oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL:
+      if not oSelf.__bStopping or oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL:
         return;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
@@ -809,7 +807,7 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     oSelf.__oTerminatedLock.fRelease();
     oSelf.fFireCallbacks("terminated");
   
-  def __fHandleTerminatedCallbackFromHTTPClientUsingProxyServer(oSelf, oClient):
+  def __fHandleTerminatedCallbackFromClientUsingProxyServer(oSelf, oClient):
     oSelf.fFireCallbacks(
       "terminated client",
       oClient = oClient,
@@ -818,15 +816,15 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
     sLowerProxyServerURL = str(oClient.oProxyServerURL).lower();
     oSelf.__oPropertyAccessTransactionLock.fAcquire();
     try:
-      assert oClient is oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL], \
+      assert oClient is oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL], \
           "Client for proxy server URL %s is %s instead of %s" % (
             sLowerProxyServerURL,
-            oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL],
+            oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL],
             oClient
           );
-      del oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL];
+      del oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL[sLowerProxyServerURL];
       # Return if we are not stopping or if there are other connections open:
-      if not oSelf.__bStopping or oSelf.__oDirectHTTPClient or oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL:
+      if not oSelf.__bStopping or oSelf.__oDirectClient or oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL:
         return;
     finally:
       oSelf.__oPropertyAccessTransactionLock.fRelease();
@@ -842,10 +840,10 @@ class cHTTPClientUsingAutomaticProxyServer(iHTTPClient, cWithCallbacks):
       return ["terminated"];
     o0CookieStore = oSelf.o0CookieStore;
     return [s for s in [
-      "with%s direct client" % ("" if oSelf.__oDirectHTTPClient else "out"),
+      "with%s direct client" % ("" if oSelf.__oDirectClient else "out"),
       "%s proxy clients" % (
-        str(len(oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL))
-            if oSelf.__doHTTPClientUsingProxyServer_by_sbLowerProxyServerURL
+        str(len(oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL))
+            if oSelf.__doClientUsingProxyServer_by_sbLowerProxyServerURL
         else "no"
       ),
       "stopping" if oSelf.__bStopping else None,

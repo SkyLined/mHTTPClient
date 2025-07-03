@@ -1,4 +1,4 @@
-class cHTTPClientException(Exception):
+class cClientException(Exception):
   def __init__(oSelf, sMessage, *, o0Client = None, dxDetails = None):
     assert isinstance(dxDetails, dict), \
         "dxDetails must be a dict, not %s" % repr(dxDetails);
@@ -17,10 +17,10 @@ class cHTTPClientException(Exception):
   def __repr__(oSelf):
     return "<%s.%s %s>" % (oSelf.__class__.__module__, oSelf.__class__.__name__, oSelf);
   
-class cHTTPClientFailedToConnectToServerThroughProxyException(cHTTPClientException):
+class cClientFailedToConnectToServerThroughProxyException(cClientException):
   pass; # The proxy server did not respond to our CONNECT request with a 200 OK.
 
 __all__ = [
-  "cHTTPClientException",
-  "cHTTPClientFailedToConnectToServerThroughProxyException",
+  "cClientException",
+  "cClientFailedToConnectToServerThroughProxyException",
 ];

@@ -1,5 +1,5 @@
-from mHTTPClient import cHTTPClientUsingProxyServer;
-from mHTTPProxy import cHTTPClientSideProxyServer;
+from mHTTPClient import cClientUsingProxyServer;
+from mHTTPProxy import cClientSideProxyServer;
 from mConsole import oConsole;
 from fTestClient import fTestClient;
 
@@ -10,8 +10,8 @@ def fTestClientUsingProxyServer(
   nEndWaitTimeoutInSeconds,
   f0LogEvents
 ):
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClientSideProxyServer instance... ", sPadding = "\u2500");
-  oProxyServer = cHTTPClientSideProxyServer(
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cClientSideProxyServer instance... ", sPadding = "\u2500");
+  oProxyServer = cClientSideProxyServer(
     sbzHost = oProxyServerURL.sbHost,
     uzPortNumber = oProxyServerURL.uPortNumber,
     o0ServerSSLContext = (
@@ -26,40 +26,25 @@ def fTestClientUsingProxyServer(
   );
   if f0LogEvents: f0LogEvents(oProxyServer, "oProxyServer");
   oConsole.fOutput("  oProxyServer = ", str(oProxyServer));
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClientUsingProxyServer instance... ", sPadding = "\u2500");
-  oHTTPClient = cHTTPClientUsingProxyServer(
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cClientUsingProxyServer instance... ", sPadding = "\u2500");
+  oHTTPClient = cClientUsingProxyServer(
     oProxyServerURL = oProxyServerURL,
     bVerifyCertificates = False,
     o0zCertificateStore = oCertificateStore,
     n0zConnectToProxyTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
   );
-  for sEventName in oHTTPClient.fasGetEventNames():
-    (lambda sEventName: oHTTPClient.fAddCallback(
-      sEventName,
-      lambda oProxyServer, **dxArguments: oConsole.fOutput(
-        "*** %s %s: %s" % (
-          oHTTPClient,
-          sEventName,
-          ", ".join(
-            "%s=%s" % (sArgumentName, str(xArgumentValue))
-            for (sArgumentName, xArgumentValue) in dxArguments.items()
-          )
-        )
-      ),
-    ))(sEventName);
-
   if f0LogEvents: f0LogEvents(oHTTPClient, "oHTTPClient");
   
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Running client tests through proxy server... ", sPadding = "\u2500");
   fTestClient(oHTTPClient, oCertificateStore, nEndWaitTimeoutInSeconds);
   
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping cHTTPClientUsingProxyServer instance... ", sPadding = "\u2500");
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping cClientUsingProxyServer instance... ", sPadding = "\u2500");
   oHTTPClient.fStop();
   assert oHTTPClient.fbWait(nEndWaitTimeoutInSeconds), \
-      "cHTTPClientUsingProxyServer instance did not stop in time";
+      "cClientUsingProxyServer instance did not stop in time";
   
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping cHTTPClientSideProxyServer instance... ", sPadding = "\u2500");
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping cClientSideProxyServer instance... ", sPadding = "\u2500");
   oProxyServer.fStop();
   assert oProxyServer.fbWait(nEndWaitTimeoutInSeconds), \
-      "cHTTPClientSideProxyServer instance did not stop in time";
+      "cClientSideProxyServer instance did not stop in time";
   

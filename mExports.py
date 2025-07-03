@@ -1,19 +1,19 @@
 import os;
-from .cHTTPClient import cHTTPClient;
-from .cHTTPClientUsingProxyServer import cHTTPClientUsingProxyServer;
+from .cClient import cClient;
+from .cClientUsingProxyServer import cClientUsingProxyServer;
 if os.name == "nt":
-  from .cHTTPClientUsingAutomaticProxyServer import cHTTPClientUsingAutomaticProxyServer;
+  from .cClientUsingAutomaticProxyServer import cClientUsingAutomaticProxyServer;
   
 from .mExceptions import (
-  cHTTPClientException,
-  cHTTPClientFailedToConnectToServerThroughProxyException,
+  cClientException,
+  cClientFailedToConnectToServerThroughProxyException,
 );
 
 __all__ = [
-  "cHTTPClient",
-  "cHTTPClientException",
-  "cHTTPClientFailedToConnectToServerThroughProxyException",
-  "cHTTPClientUsingProxyServer",
+  "cClient",
+  "cClientException",
+  "cClientFailedToConnectToServerThroughProxyException",
+  "cClientUsingProxyServer",
 ];
 if os.name == "nt":
-  __all__.append("cHTTPClientUsingAutomaticProxyServer");
+  __all__.append("cClientUsingAutomaticProxyServer");

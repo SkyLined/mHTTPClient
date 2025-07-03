@@ -2,7 +2,7 @@ import socket, threading;
 
 from mConsole import oConsole;
 from mHTTPProtocol import (
-  cHTTPInvalidMessageException,
+  cInvalidMessageException,
   cURL,
 );
 from mTCPIPConnection import (
@@ -38,7 +38,7 @@ oConnectTimeoutURL = foGetServerURL(b"connect-timeout");
 oConnectionDisconnectedURL = foGetServerURL(b"disconnect");
 oConnectionShutdownURL = foGetServerURL(b"shutdown");
 oResponseTimeoutURL = foGetServerURL(b"response-timeout");
-oInvalidHTTPMessageURL = foGetServerURL(b"send-invalid-response");
+oInvalidMessageURL = foGetServerURL(b"send-invalid-response");
 
 def fTestClient(
   oHTTPClient,
@@ -68,7 +68,7 @@ def fTestClient(
   oConsole.fOutput("  oRequest = %s" % oRequest);
   oConsole.fOutput("  oResponse = %s" % oResponse);
   ############################################
-  if oHTTPClient.__class__.__name__ == "cHTTPClient": 
+  if oHTTPClient.__class__.__name__ == "cHTTPClient":
     # cHTTPClient specific checks
     asbConnectionPoolsProtocolHostPort = set(oHTTPClient._cHTTPClient__doHTTPConnectionsToServerPool_by_sbBaseURL.keys());
     assert asbConnectionPoolsProtocolHostPort == set((oTestURL.sbBase,)), \
@@ -219,7 +219,7 @@ def fTestClient(
 
   # Create a server on a socket that sends an invalid response.
   oInvalidHTTPMessageServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0);
-  oInvalidHTTPMessageServerSocket.bind((oInvalidHTTPMessageURL.sbHost, oInvalidHTTPMessageURL.uPortNumber));
+  oInvalidHTTPMessageServerSocket.bind((oInvalidMessageURL.sbHost, oInvalidMessageURL.uPortNumber));
   oInvalidHTTPMessageServerSocket.listen(1);
   sbInvalidResponse = b"Hello, world!\r\n";
   def fInvalidHTTPMessageServerThread():
@@ -258,8 +258,8 @@ def fTestClient(
     (1, oResponseTimeoutURL,
         cTCPIPDataTimeoutException, [],
         [504]),
-    (1, oInvalidHTTPMessageURL,
-        cHTTPInvalidMessageException, [],
+    (1, oInvalidMessageURL,
+        cInvalidMessageException, [],
         [502]),
   ):
     oConsole.fOutput("\u2500\u2500\u2500\u2500 Making a test request to %s " % oURL, sPadding = "\u2500");
@@ -286,11 +286,6 @@ def fTestClient(
           assert o0Response, \
               "No response!?";
           oResponse = o0Response;
-          if auAcceptableStatusCodes:
-            assert oResponse.uStatusCode in auAcceptableStatusCodes, \
-                "Expected a HTTP %s response, got %s" % \
-                ("/".join(["%03d" % uStatusCode for uStatusCode in auAcceptableStatusCodes]), oResponse.fsGetStatusLine());
-          oConsole.fOutput("  oResponse = %s" % oResponse);
         except Exception as oException:
           if oException.__class__ is cExpectedExceptionClass:
             oConsole.fOutput("  + Threw %s." % repr(oException));
@@ -305,7 +300,12 @@ def fTestClient(
               oConsole.fOutput("    No exception expected.");
             raise;
         else:
-          if cExpectedExceptionClass:
+          oConsole.fOutput("  oResponse = %s" % oResponse);
+          if auAcceptableStatusCodes:
+            assert oResponse.uStatusCode in auAcceptableStatusCodes, \
+                "Expected a HTTP %s response, got %s" % \
+                ("/".join(["%03d" % uStatusCode for uStatusCode in auAcceptableStatusCodes]), oResponse.fsGetStatusLine());
+          if cExpectedExceptionClass and not auAcceptableStatusCodes:
             oConsole.fOutput(COLOR_ERROR, "  - Expected %s." % cExpectedExceptionClass.__name__);
             raise AssertionError("No exception");
   

@@ -1,5 +1,5 @@
 from mConsole import oConsole;
-from mHTTPClient import cHTTPClientUsingAutomaticProxyServer;
+from mHTTPClient import cClientUsingAutomaticProxyServer;
 
 from fTestClient import fTestClient;
 
@@ -8,8 +8,8 @@ def fTestClientUsingAutomaticProxyServer(
   nEndWaitTimeoutInSeconds,
   f0LogEvents
 ):
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cHTTPClientUsingAutomaticProxyServer instance... ", sPadding = "\u2500");
-  oHTTPClient = cHTTPClientUsingAutomaticProxyServer(
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Creating a cClientUsingAutomaticProxyServer instance... ", sPadding = "\u2500");
+  oHTTPClient = cClientUsingAutomaticProxyServer(
     bVerifyCertificates = False,
     o0zCertificateStore = oCertificateStore,
     n0zConnectTimeoutInSeconds = 1, # Make sure connection attempts time out quickly to trigger a timeout exception.
@@ -33,7 +33,7 @@ def fTestClientUsingAutomaticProxyServer(
   oConsole.fOutput("\u2500\u2500\u2500\u2500 Running client tests through automatic proxy server... ", sPadding = "\u2500");
   fTestClient(oHTTPClient, oCertificateStore, nEndWaitTimeoutInSeconds);
   
-  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping cHTTPClientUsingAutomaticProxyServer instance... ", sPadding = "\u2500");
+  oConsole.fOutput("\u2500\u2500\u2500\u2500 Stopping cClientUsingAutomaticProxyServer instance... ", sPadding = "\u2500");
   oHTTPClient.fStop();
   assert oHTTPClient.fbWait(nEndWaitTimeoutInSeconds), \
-      "cHTTPClientUsingAutomaticProxyServer instance did not stop in time";
+      "cClientUsingAutomaticProxyServer instance did not stop in time";

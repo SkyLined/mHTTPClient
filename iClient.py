@@ -7,9 +7,9 @@ except ModuleNotFoundError as oException:
   fShowDebugOutput = lambda x, s0 = None: x; # NOP
 
 from mHTTPProtocol import (
-  cHTTPHeaders,
-  cHTTPInvalidURLException,
-  cHTTPRequest,
+  cHeaders,
+  cInvalidURLException,
+  cRequest,
   cURL,
 );
 from mMultiThreading import cWithCallbacks;
@@ -28,7 +28,7 @@ except:
 # bug, where "too long" is defined by the following value:
 gnDeadlockTimeoutInSeconds = 1; # We're not doing anything time consuming, so this should suffice.
 
-class iHTTPClient(cWithCallbacks):
+class iClient(cWithCallbacks):
   bSSLIsSupported = m0SSL is not None;
   u0DefaultMaxNumberOfConnectionsToServer = 10;
   n0zDefaultConnectTimeoutInSeconds = 10;
@@ -70,11 +70,9 @@ class iHTTPClient(cWithCallbacks):
     sbzMethod = zNotProvided,
     sbzVersion = zNotProvided,
     o0zHeaders = zNotProvided,
-    sb0Body = None,
-    s0Data = None,
-    a0sbBodyChunks = None,
-    bAddContentLengthHeader = False,
-    u0zMaxStatusLineSize = zNotProvided,
+    sbBody = b"",
+    bSetContentLengthHeader = False,
+    u0zMaxStartLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
     u0zMaxNumberOfHeaders = zNotProvided,
@@ -90,11 +88,9 @@ class iHTTPClient(cWithCallbacks):
       sbzMethod = sbzMethod,
       sbzVersion = sbzVersion,
       o0zHeaders = o0zHeaders,
-      sb0Body = sb0Body,
-      s0Data = s0Data,
-      a0sbBodyChunks = a0sbBodyChunks,
-      bAddContentLengthHeader = bAddContentLengthHeader,
-      u0zMaxStatusLineSize = u0zMaxStatusLineSize,
+      sbBody = sbBody,
+      bSetContentLengthHeader = bSetContentLengthHeader,
+      u0zMaxStartLineSize = u0zMaxStartLineSize,
       u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
       u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
       u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
@@ -117,11 +113,9 @@ class iHTTPClient(cWithCallbacks):
     sbzMethod = zNotProvided,
     sbzVersion = zNotProvided,
     o0zHeaders = zNotProvided,
-    sb0Body = None,
-    s0Data = None,
-    a0sbBodyChunks = None,
-    bAddContentLengthHeader = False,
-    u0zMaxStatusLineSize = zNotProvided,
+    sbBody = b"",
+    bSetContentLengthHeader = False,
+    u0zMaxStartLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
     u0zMaxNumberOfHeaders = zNotProvided,
@@ -136,12 +130,10 @@ class iHTTPClient(cWithCallbacks):
       "oURL": (oURL, cURL),
       "sbzMethod": (sbzMethod, bytes, zNotProvided),
       "sbzVersion": (sbzVersion, bytes, zNotProvided),
-      "o0zHeaders": (o0zHeaders, cHTTPHeaders, None, zNotProvided),
-      "sb0Body": (sb0Body, bytes, None),
-      "s0Data": (s0Data, str, None),
-      "a0sbBodyChunks": (a0sbBodyChunks, [bytes], None),
-      "bAddContentLengthHeader": (bAddContentLengthHeader, bool),
-      "u0zMaxStatusLineSize": (u0zMaxStatusLineSize, int, None, zNotProvided),
+      "o0zHeaders": (o0zHeaders, cHeaders, None, zNotProvided),
+      "sbBody": (sbBody, bytes),
+      "bSetContentLengthHeader": (bSetContentLengthHeader, bool),
+      "u0zMaxStartLineSize": (u0zMaxStartLineSize, int, None, zNotProvided),
       "u0zMaxHeaderNameSize": (u0zMaxHeaderNameSize, int, None, zNotProvided),
       "u0zMaxHeaderValueSize": (u0zMaxHeaderValueSize, int, None, zNotProvided),
       "u0zMaxNumberOfHeaders": (u0zMaxNumberOfHeaders, int, None, zNotProvided),
@@ -166,17 +158,15 @@ class iHTTPClient(cWithCallbacks):
         sbzMethod = sbzMethod,
         sbzVersion = sbzVersion,
         o0zHeaders = o0zHeaders,
-        sb0Body = sb0Body,
-        s0Data = s0Data,
-        a0sbBodyChunks = a0sbBodyChunks,
-        bAddContentLengthHeader = bAddContentLengthHeader,
+        sbBody = sbBody,
+        bSetContentLengthHeader = bSetContentLengthHeader,
       );
       if o0OriginalRequest is None:
         o0OriginalRequest = oRequest;
       o0Response = oSelf.fo0GetResponseForRequestAndURL(
         oRequest,
         oURL,
-        u0zMaxStatusLineSize = u0zMaxStatusLineSize,
+        u0zMaxStartLineSize = u0zMaxStartLineSize,
         u0zMaxHeaderNameSize = u0zMaxHeaderNameSize,
         u0zMaxHeaderValueSize = u0zMaxHeaderValueSize,
         u0zMaxNumberOfHeaders = u0zMaxNumberOfHeaders,
@@ -198,13 +188,15 @@ class iHTTPClient(cWithCallbacks):
       if 300 > oResponse.uStatusCode or oResponse.uStatusCode > 399:
         break;
       # If the redirect has no `Location` header, we are done.
-      o0LocationHeader = o0Response.oHeaders.fo0GetUniqueHeaderForName(b"Location");
-      if o0LocationHeader is None:
+      aoLocationHeaders = o0Response.oHeaders.faoGetForNormalizedName(b"Location");
+      if len(aoLocationHeaders) == 0:
         break;
+      # If there are multiple location headers, use the last one:
+      oLocationHeader = aoLocationHeaders[-1];
       # If the redirect is relative, figure out the absolute URL to redirect to.
       # If the redirect is absolute, make sure it start with `http://` or `https://`.
       # If it does not, we are done. If the provided URL is invalid, we are done too.
-      sbRedirectToURL = o0LocationHeader.sbValue;
+      sbRedirectToURL = oLocationHeader.sbValue;
       asbRedirectToURL = sbRedirectToURL.split(b"://", 1);
       try:
         if len(asbRedirectToURL) == 1: # one element for relative URLs
@@ -213,7 +205,7 @@ class iHTTPClient(cWithCallbacks):
           oURL = cURL.foFromBytesString(sbRedirectToURL);
         else:
           break;
-      except cHTTPInvalidURLException:
+      except cInvalidURLException:
         break;
       uMaximumNumberOfRedirectsToFollow -= 1;
       # 303 always changes the method for the next request to GET. This behavior is undefined
@@ -225,9 +217,8 @@ class iHTTPClient(cWithCallbacks):
         oResponse.uStatusCode in auStatusCodesThatChangeMethodToGetAfterRedirect
       ):
         sbzMethod = b"GET";
-        sb0Body = None;
-        s0Data = None;
-        a0sbBodyChunks = None;
+        sbBody = b"";
+        bSetContentLengthHeader = False;
       # Make another request to follow the redirect.
     return (o0OriginalRequest, o0Response);
   
@@ -238,33 +229,26 @@ class iHTTPClient(cWithCallbacks):
     sbzMethod = zNotProvided,
     sbzVersion = zNotProvided,
     o0zHeaders = zNotProvided,
-    sb0Body = None,
-    s0Data = None,
-    a0sbBodyChunks = None,
-    bAddContentLengthHeader = False,
-    o0AdditionalHeaders = None,
+    sbBody = None,
+    bSetContentLengthHeader = False,
   ):
     fAssertTypes({
-      oURL: (oURL, cURL),
-      sbzMethod: (sbzMethod, bytes, zNotProvided),
-      sbzVersion: (sbzVersion, bytes, zNotProvided),
-      o0zHeaders: (o0zHeaders, cHTTPHeaders, None, zNotProvided),
-      sb0Body: (sb0Body, bytes, None),
-      s0Data: (s0Data, str, None),
-      a0sbBodyChunks: (s0Data, [bytes], None),
-      bAddContentLengthHeader: (bAddContentLengthHeader, bool),
-      o0AdditionalHeaders: (o0AdditionalHeaders, cHTTPHeaders, None),
+      "oURL": (oURL, cURL),
+      "sbzMethod": (sbzMethod, bytes, zNotProvided),
+      "sbzVersion": (sbzVersion, bytes, zNotProvided),
+      "o0zHeaders": (o0zHeaders, cHeaders, None, zNotProvided),
+      "sbBody": (sbBody, bytes, None),
     });
     o0ProxyServerURL = oSelf.fo0GetProxyServerURLForURL(oURL);
     if oSelf.bStopping:
       fShowDebugOutput("Stopping.");
       return None;
     if o0ProxyServerURL is not None and fbIsProvided(o0zHeaders) and o0zHeaders is not None:
+      oHeaders = o0zHeaders;
       for sbName in [b"Proxy-Authenticate", b"Proxy-Authorization", b"Proxy-Connection"]:
-        o0Header = o0zHeaders.fo0GetUniqueHeaderForName(sbName);
-        assert o0Header is None, \
-            "%s header is not implemented!" % repr(o0Header.sbName);
-    oRequest = cHTTPRequest(
+        assert len(oHeaders.faoGetForNormalizedName(sbName)) == 0, \
+            "%s header is not implemented!" % repr(sbName);
+    oRequest = cRequest(
       # When sending requests to a proxy, secure requests are forwarded directly to the server (after an initial
       # CONNECT request), so the URL in the request must be relative. Non-secure requests are made to the proxy,
       # which most have the absolute URL.
@@ -272,16 +256,12 @@ class iHTTPClient(cWithCallbacks):
       sbzMethod = sbzMethod,
       sbzVersion = sbzVersion,
       o0zHeaders = o0zHeaders,
-      sb0Body = sb0Body,
-      s0Data = s0Data,
-      a0sbBodyChunks = a0sbBodyChunks,
-      bAddContentLengthHeader = bAddContentLengthHeader,
-      o0AdditionalHeaders = o0AdditionalHeaders,
+      sbBody = sbBody,
     );
-    if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Host"):
-      oRequest.oHeaders.foAddHeaderForNameAndValue(b"Host", oURL.sbHostAndOptionalPort);
-    if not oRequest.oHeaders.fo0GetUniqueHeaderForName(b"Accept-Encoding"):
-      oRequest.oHeaders.foAddHeaderForNameAndValue(b"Accept-Encoding", b", ".join(oRequest.asbSupportedCompressionTypes));
+    if not oRequest.oHeaders.fbHasValueForNormalizedName(b"Host"):
+      oRequest.oHeaders.foAddNameAndValue(b"Host", oURL.sbHostAndOptionalPort);
+    if not oRequest.oHeaders.fbHasValueForNormalizedName(b"Accept-Encoding"):
+      oRequest.oHeaders.foAddNameAndValue(b"Accept-Encoding", b", ".join(oRequest.asbSupportedCompressionTypes));
     o0CookieStore = oSelf.o0CookieStore;
     if o0CookieStore: o0CookieStore.fApplyToRequestForURL(oRequest, oURL);
     return oRequest;
@@ -291,7 +271,7 @@ class iHTTPClient(cWithCallbacks):
     oRequest,
     oURL,
     *,
-    u0zMaxStatusLineSize = zNotProvided,
+    u0zMaxStartLineSize = zNotProvided,
     u0zMaxHeaderNameSize = zNotProvided,
     u0zMaxHeaderValueSize = zNotProvided,
     u0zMaxNumberOfHeaders = zNotProvided,
